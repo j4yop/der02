@@ -31,5 +31,7 @@ Source of fuel constants: heat of combustion, vapor density, flame temperature. 
 - **Ticket 04** — Blast: TNO Green Book Ch. 6, Multi-Energy strength class 7. Worked example reference: TNO Green Book worked example X.
 - **Ticket 05** — Thermal: point-source flux per CCPS *Guidelines for CPQRA* 2nd ed. Ch. 2; ALOHA user's manual. **Solid-flame view-factor model deferred** (needs flame-height sub-model from API RP 521).
 - **Ticket 06** — Wind: simplified CCPS dispersion correction (stretch factor); κ = 0.1 s/m default. **Real dispersion model deferred** (Britoil/EPA heavy-gas; Pasquill stability A–F).
+- **Ticket 08** — Folium rendering: folium 0.20+, Shapely 2.0+ for convex-hull polygon construction. No physics citation; pure rendering.
+- **Ticket 09** — Streamlit UI: streamlit-folium for embedded map widget. No physics.
 
 (Filled in detail as each ticket lands.)
