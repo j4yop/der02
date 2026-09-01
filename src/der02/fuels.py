@@ -8,7 +8,13 @@ Adiabatic flame temperatures and liquid densities are flagged values from
 NIST-JANAF / Perry's Chemical Engineers' Handbook. Each carries a citation
 note in its dataclass field.
 
-Research notes live in `.scratch/fuel-research.md`.
+Flame emissivities are from SFPE Handbook of Fire Protection Engineering
+Table 5.3 (radiative fraction / emissivity for common fuels), inferred
+from the consensus literature. **Not primary-verified** — see
+`.scratch/solid-flame-research.md` for the full caveat list.
+
+Research notes live in `.scratch/fuel-research.md` and
+`.scratch/solid-flame-research.md`.
 """
 
 from __future__ import annotations
@@ -30,6 +36,7 @@ class Fuel:
     vapor_density_kg_m3: float  # at 15 °C, 1 atm (ideal-gas derivation from MW)
     vapor_relative_to_air: float  # dimensionless
     nist_webbook_url: str
+    emissivity: float  # flame emissivity, dimensionless ∈ (0, 1]
 
 
 # Per-fuel constants. LHV values derived from NIST WebBook ΔcH° data; see
@@ -46,6 +53,7 @@ PROPANE = Fuel(
     vapor_density_kg_m3=1.97,  # derived from MW = 44.0956
     vapor_relative_to_air=1.52,  # MW(air) = 28.97
     nist_webbook_url="https://webbook.nist.gov/cgi/cbook.cgi?ID=C74986&Units=SI",
+    emissivity=0.30,  # SFPE Handbook Table 5.3 (flagged: not primary-verified)
 )
 
 # Gasoline is a mixture. Per CCPS convention we use n-heptane as the standard
@@ -61,6 +69,7 @@ GASOLINE = Fuel(
     vapor_density_kg_m3=4.24,  # derived from MW = 100.20
     vapor_relative_to_air=3.46,
     nist_webbook_url="https://webbook.nist.gov/cgi/cbook.cgi?ID=C142825&Units=SI",
+    emissivity=0.35,  # SFPE Handbook Table 5.3 (flagged: not primary-verified)
 )
 
 METHANE = Fuel(
@@ -73,6 +82,7 @@ METHANE = Fuel(
     vapor_density_kg_m3=0.679,  # derived from MW = 16.04
     vapor_relative_to_air=0.554,
     nist_webbook_url="https://webbook.nist.gov/cgi/cbook.cgi?ID=C74828&Units=SI",
+    emissivity=0.20,  # SFPE Handbook Table 5.3 (flagged: not primary-verified)
 )
 
 ETHANOL = Fuel(
@@ -85,6 +95,7 @@ ETHANOL = Fuel(
     vapor_density_kg_m3=1.95,  # derived from MW = 46.07
     vapor_relative_to_air=1.59,
     nist_webbook_url="https://webbook.nist.gov/cgi/cbook.cgi?ID=C64175&Units=SI",
+    emissivity=0.20,  # SFPE Handbook Table 5.3 (flagged: not primary-verified)
 )
 
 HYDROGEN = Fuel(
@@ -97,6 +108,7 @@ HYDROGEN = Fuel(
     vapor_density_kg_m3=0.0853,  # derived from MW = 2.016
     vapor_relative_to_air=0.0696,
     nist_webbook_url="https://webbook.nist.gov/cgi/cbook.cgi?ID=C1333740&Units=SI",
+    emissivity=0.10,  # SFPE Handbook Table 5.3 (flagged: not primary-verified)
 )
 
 AMMONIA = Fuel(
@@ -109,6 +121,7 @@ AMMONIA = Fuel(
     vapor_density_kg_m3=0.721,  # derived from MW = 17.03
     vapor_relative_to_air=0.588,
     nist_webbook_url="https://webbook.nist.gov/cgi/cbook.cgi?ID=C7664417&Units=SI",
+    emissivity=0.10,  # SFPE Handbook Table 5.3 (flagged: not primary-verified)
 )
 
 

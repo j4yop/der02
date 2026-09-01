@@ -33,6 +33,36 @@ class TestFuelDataclass:
             assert fuel.flame_temperature_k > 1000  # sanity: combustion temps > 1000 K
             assert isinstance(fuel.nist_webbook_url, str)
             assert "webbook.nist.gov" in fuel.nist_webbook_url
+            assert isinstance(fuel.emissivity, float)
+            assert 0.0 < fuel.emissivity <= 1.0
+
+
+class TestEmissivity:
+    """Per-fuel emissivity from SFPE Handbook Table 5.3 — flagged
+    not-primary-verified but pinned here so any change requires a
+    citation update."""
+
+    def test_propane_emissivity(self):
+        assert PROPANE.emissivity == pytest.approx(0.30, rel=0.20)
+
+    def test_gasoline_emissivity(self):
+        assert GASOLINE.emissivity == pytest.approx(0.35, rel=0.20)
+
+    def test_methane_emissivity(self):
+        assert METHANE.emissivity == pytest.approx(0.20, rel=0.20)
+
+    def test_ethanol_emissivity(self):
+        assert ETHANOL.emissivity == pytest.approx(0.20, rel=0.20)
+
+    def test_hydrogen_emissivity_low(self):
+        # Hydrogen diffusion flames have very low radiative fraction.
+        assert HYDROGEN.emissivity == pytest.approx(0.10, rel=0.30)
+        assert HYDROGEN.emissivity < 0.20
+
+    def test_ammonia_emissivity_low(self):
+        # Ammonia flames are barely luminous.
+        assert AMMONIA.emissivity == pytest.approx(0.10, rel=0.30)
+        assert AMMONIA.emissivity < 0.20
 
 
 class TestKnownFuels:

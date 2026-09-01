@@ -8,14 +8,17 @@ NOT contain any physics — only orchestration, sliders, and rendering.
 
 UI layout
 ---------
-- Sidebar (left): fuel selectbox, tank volume slider, wind speed slider,
-  wind direction slider, bounding box latitude/longitude selectors.
+- Sidebar (left): fuel, tank volume, wind speed/direction, location,
+  grid resolution, advanced thermal controls (emissivity override,
+  transmissivity, tank dimensions).
 - Main panel: folium map with zone polygons, wind arrow, legend, and
   numeric summary of band distances.
 - Footer: disclaimer.
 """
 
 from __future__ import annotations
+
+import math
 
 import streamlit as st
 from streamlit_folium import st_folium
@@ -40,9 +43,11 @@ DISCLAIMER: str = (
     "Not for life-safety decisions. "
     "Consequence-modeling output is for planning and risk assessment only. "
     "Values rely on the TNO Multi-Energy class-7 blast curve and the "
-    "point-source thermal model; both should be re-verified against "
-    "primary references (TNO Green Book, CCPS *Guidelines for CPQRA*) "
-    "before any operational use."
+    "solid-flame thermal model with Nusselt-analog view-factor "
+    "integration. The TNO curve values and per-fuel emissivities are "
+    "flagged as not primary-verified in CITATIONS.md — re-verify against "
+    "primary references (TNO Green Book, SFPE Handbook, CCPS *Guidelines "
+    "for CPQRA*) before any operational use."
 )
 
 
@@ -54,7 +59,8 @@ st.set_page_config(
 st.title("der02 — Threat-Zone Estimator")
 st.caption(
     "Industrial fire and explosion consequence modelling. "
-    "TNO Multi-Energy blast + point-source thermal, with wind distortion."
+    "TNO Multi-Energy blast + solid-flame thermal (Nusselt view-factor), "
+    "with wind distortion."
 )
 
 # ── Sidebar controls ──────────────────────────────────────────────────
@@ -68,6 +74,9 @@ with st.sidebar:
         help="Substance stored in the tank.",
     )
     fuel = get_fuel(fuel_name)
+
+    # Default tank diameter from volume (cylinder, H=D).
+    default_diameter = (4.0 * 1000.0 / math.pi) ** (1.0 / 3.0)
 
     volume_m3 = st.slider(
         "Tank volume (m³)",
@@ -121,6 +130,60 @@ with st.sidebar:
         step=50,
     )
 
+    # Advanced controls — collapsed by default. Users who don't open
+    # this section get the fuel-aware defaults.
+    with st.expander("Advanced thermal", expanded=False):
+        use_fuel_emissivity = st.checkbox(
+            "Use fuel emissivity",
+            value=True,
+            help="If checked, emissivity comes from the Fuel object "
+            "(NIST-sourced, SFPE Handbook Table 5.3, not primary-verified).",
+        )
+        emissivity = st.slider(
+            "Flame emissivity",
+            min_value=0.0,
+            max_value=1.0,
+            value=fuel.emissivity,
+            step=0.05,
+            disabled=use_fuel_emissivity,
+            help="Luminous fraction of the flame. CCPS Ch. 2 default 0.4.",
+        )
+        transmissivity = st.slider(
+            "Atmospheric transmissivity",
+            min_value=0.0,
+            max_value=1.0,
+            value=1.0,
+            step=0.05,
+            help="Path-length / humidity correction. Default 1.0 (no loss).",
+        )
+        override_tank = st.checkbox(
+            "Override tank dimensions",
+            value=False,
+            help="By default tank diameter is derived from volume. "
+            "Tick to override.",
+        )
+        tank_diameter_m = st.number_input(
+            "Tank diameter (m)",
+            min_value=0.5,
+            max_value=100.0,
+            value=default_diameter,
+            step=0.5,
+            disabled=not override_tank,
+        )
+        tank_height_m = st.number_input(
+            "Tank height (m)",
+            min_value=0.5,
+            max_value=100.0,
+            value=default_diameter,
+            step=0.5,
+            disabled=not override_tank,
+        )
+
+# ── Apply advanced-control logic ──────────────────────────────────────
+eff_emissivity = fuel.emissivity if use_fuel_emissivity else float(emissivity)
+eff_diameter = float(tank_diameter_m) if override_tank else None
+eff_height = float(tank_height_m) if override_tank else None
+
 # ── Compute zones ─────────────────────────────────────────────────────
 bbox = BBox(
     min_lat=source_lat - BOX_HALF_EXTENT,
@@ -138,7 +201,30 @@ records = compute_zones(
     bbox=bbox,
     wind=wind,
     resolution_m=float(resolution),
+    tank_diameter_m=eff_diameter,
+    tank_height_m=eff_height,
+    transmissivity=float(transmissivity),
 )
+# Note: emissivity override isn't a parameter on compute_zones (it
+# uses fuel.emissivity directly). For the advanced-override case we
+# post-process the records by re-running the thermal calc — but for
+# MVP we use the fuel emissivity regardless of the slider setting
+# (the slider is informational until the orchestrator takes a parameter).
+# This is flagged in the code as a known limitation.
+if not use_fuel_emissivity:
+    from der02.thermal import flame_height_heskestad, solid_flame_flux
+    mass_kg = float(volume_m3) * fuel.vapor_density_kg_m3
+    hrr_kw = mass_kg * fuel.lhv_kj_kg * 1000.0 / 600.0
+    h = max(flame_height_heskestad(hrr_kw, eff_diameter or 10.0), 1.0)
+    for r in records:
+        r.thermal_kw_m2 = solid_flame_flux(
+            distance_m=max(r.distance_m, 0.1),
+            flame_height_m=h,
+            flame_diameter_m=eff_diameter or 10.0,
+            flame_temperature_k=fuel.flame_temperature_k,
+            emissivity=eff_emissivity,
+            transmissivity=float(transmissivity),
+        )
 
 # ── Render map ────────────────────────────────────────────────────────
 fmap = render_map(

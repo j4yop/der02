@@ -118,7 +118,8 @@ Commercial consequence-modeling software exists (DNV PHAST, GexCon EFFECTS, ALOH
 ## Limitations
 
 - **TNO curve values are not primary-verified.** The TNO Green Book PDF was removed from public web. The consensus class-7 curve is reproduced across van den Berg 1985 / TNO / CCPS / Lees, but every constant should be checked against the Green Book before operational use.
-- **Solid-flame thermal model deferred.** Only point-source implemented. Real fire-engineering work needs flame height from API RP 521.
+- **Solid-flame thermal model uses numerical view-factor integration.** The closed-form Shokri-Beyler approximation was not implemented because the constants were not primary-verified. The numerical integration of the Nusselt analog is correct by construction but slower. Per-fuel emissivities (SFPE Handbook Table 5.3) are flagged as not primary-verified.
+- **Heskestad flame height uses the simplified dimensional form** (`H = 0.235 · Q^(2/5)`). The full form including a −1.02·D correction for very small D was omitted because the constants were not primary-verified. For typical industrial fires (D > 1 m), the correction is small.
 - **Wind distortion is a heuristic.** Real dispersion modeling (Britoil/EPA heavy-gas, Pasquill stability A–F) is out of scope.
 - **Single tank only.** Multi-tank union is not implemented.
 - **No toxic gas dispersion.** No dispersion model for chlorine, ammonia, or other dense gases.

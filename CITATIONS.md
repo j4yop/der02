@@ -107,15 +107,9 @@ the Green Book or CCPS before operational use.**
 - **Ticket 04** — Blast: TNO Green Book Ch. 6 (Multi-Energy strength
   class 7). Curve values from consensus reproduction across van den
   Berg 1985 / TNO / CCPS / Lees. **Not primary-verified.**
-- **Ticket 05** — Thermal: point-source flux per CCPS *Guidelines for
-  CPQRA* 2nd ed. Ch. 2; ALOHA user's manual. **Solid-flame view-factor
-  model deferred** (needs flame-height sub-model from API RP 521).
-- **Ticket 06** — Wind: simplified CCPS dispersion correction (stretch
-  factor); κ = 0.1 s/m default. **Real dispersion model deferred**
-  (Britoil/EPA heavy-gas; Pasquill stability A–F).
-- **Ticket 07** — Zone orchestrator: CCPS combustion efficiency 0.4;
-  TNO Green Book energy scaling. Bounding-box grid via pyproj.Geod
-  (WGS84).
+- **Ticket 05** — Thermal: **solid-flame view-factor** model using Nusselt-analog numerical integration (Incropera et al. *Principles of Heat and Mass Transfer* 7th ed.). Closed-form Shokri-Beyler approximation (CCPS Ch. 2 / SFPE Handbook) was not implemented because the coefficients could not be primary-verified. **Per-fuel emissivity values from SFPE Handbook Table 5.3 — flagged not primary-verified.** Heskestad (1984) flame height correlation — simplified form only; full-form constants not primary-verified. Point-source flux fallback still exposed for comparison.
+- **Ticket 06** — Wind: simplified CCPS dispersion correction (stretch factor); κ = 0.1 s/m default. **Real dispersion model deferred** (Britoil/EPA heavy-gas; Pasquill stability A–F).
+- **Ticket 07** — Zone orchestrator: CCPS combustion efficiency 0.4; TNO Green Book energy scaling. Bounding-box grid via pyproj.Geod (WGS84). Orchestrator now uses solid-flame thermal (ticket 05) instead of point-source.
 - **Ticket 08** — Folium rendering: folium 0.20+, Shapely 2.0+ for
   convex-hull polygon construction. No physics citation; pure
   rendering.

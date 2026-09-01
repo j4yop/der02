@@ -9,9 +9,9 @@ The orchestrator hides three physical steps behind one interface:
        bearing from the source, then apply the wind distortion model to
        get an effective distance.
     3. Compute the peak side-on overpressure (TNO blast) and the
-       point-source thermal flux at that effective distance, and
-       classify each into a severity band. The zone record's severity is
-       the worst of the two.
+       solid-flame thermal flux at that effective distance, and
+       classify each into a severity band. The zone record's severity
+       is the worst of the two.
 
 Energy / HRR derivation
 -----------------------
@@ -31,28 +31,40 @@ The thermal HRR assumes the same mass burns in a pool/jet fire:
 
     Q_kW = mass_kg × LHV_kJ_kg × 1000 / burn_duration_s
 
-Burn duration is computed from a simple mass-burning-rate model: a
-default 0.05 kg/(m²·s) for liquids, scaled by the tank surface area.
-For the MVP we use a fixed 10-minute (600 s) burn duration as a simple
-ceiling estimate; site-specific data overrides this when available.
+Burn duration uses a simple fixed-ceiling estimate of 10 minutes
+(600 s); site-specific data overrides this when available.
+
+Thermal model
+-------------
+Uses the **solid-flame view-factor model** (Nusselt analog integration
+in `der02.thermal.solid_flame_flux`) rather than the simpler
+point-source approximation. Flame geometry is computed from the
+heat release rate via Heskestad's correlation (flame height) and the
+tank diameter (cylinder base). Flame temperature and emissivity come
+from the Fuel dataclass.
 
 References
 ----------
 - CCPS *Guidelines for Chemical Process Quantitative Risk Analysis*
   2nd ed. (2000) — chapter 4 (combustion efficiency, blast) and
-  chapter 2 (thermal radiation).
+  chapter 2 (thermal radiation, flame emissivity).
 - TNO Green Book / CPR 14E 3rd ed. (2005) — vapor cloud energy scaling.
+- Heskestad, G. (1984). "Engineering relations for fire plumes."
+  Fire Technology 20(1), 31–43.
+- Incropera et al. *Principles of Heat and Mass Transfer* — Nusselt
+  analog for view-factor integration.
 """
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from pyproj import Geod
 
 from .blast import blast_overpressure
 from .fuels import Fuel
-from .thermal import point_source_flux
+from .thermal import flame_height_heskestad, solid_flame_flux
 from .thresholds import classify_blast, classify_thermal
 from .wind import bearing_from_source, effective_distance
 
@@ -91,10 +103,15 @@ class BBox:
 DEFAULT_COMBUSTION_EFFICIENCY: float = 0.4
 
 # Default burn duration in seconds for thermal radiation computation.
-# Used to translate total combustion energy to a heat release rate (kW).
-# 10 minutes is a common upper-bound for "rapid" pool fires; site-specific
-# data overrides this.
 DEFAULT_BURN_DURATION_S: float = 600.0
+
+# Default tank dimensions for solid-flame geometry (used when caller
+# doesn't supply them).
+DEFAULT_TANK_DIAMETER_M: float = 10.0
+DEFAULT_TANK_HEIGHT_M: float = 10.0
+
+# Default atmospheric transmissivity (clean upper bound).
+DEFAULT_TRANSMISSIVITY: float = 1.0
 
 
 def _grid_nodes(bbox: BBox, resolution_m: float) -> list[tuple[float, float]]:
@@ -137,6 +154,17 @@ def _severity_worst(blast_pa: float, thermal_kw_m2: float) -> str:
     return b if order[b] >= order[t] else t
 
 
+def _tank_diameter_from_volume(volume_m3: float) -> float:
+    """Estimate a cylindrical tank diameter (m) from volume assuming
+    height equals diameter. Used as a default when the caller doesn't
+    supply tank dimensions.
+    """
+    if volume_m3 <= 0:
+        return DEFAULT_TANK_DIAMETER_M
+    # V = π · (D/2)² · H, with H = D → V = π · D³/4 → D = (4V/π)^(1/3).
+    return (4.0 * volume_m3 / math.pi) ** (1.0 / 3.0)
+
+
 def compute_zones(
     fuel: Fuel,
     volume_m3: float,
@@ -147,6 +175,9 @@ def compute_zones(
     resolution_m: float = 50.0,
     combustion_efficiency: float = DEFAULT_COMBUSTION_EFFICIENCY,
     burn_duration_s: float = DEFAULT_BURN_DURATION_S,
+    tank_diameter_m: float | None = None,
+    tank_height_m: float | None = None,
+    transmissivity: float = DEFAULT_TRANSMISSIVITY,
 ) -> list[ZoneRecord]:
     """Compute hazard zones over a grid.
 
@@ -170,6 +201,12 @@ def compute_zones(
         ∈ (0, 1]. Default 0.4 (TNO / CCPS typical).
     burn_duration_s
         Burn duration for thermal HRR computation, seconds. Default 600.
+    tank_diameter_m
+        Cylindrical tank diameter, m. If None, derived from volume.
+    tank_height_m
+        Cylindrical tank height, m. If None, equals tank_diameter_m.
+    transmissivity
+        Atmospheric transmissivity, dimensionless ∈ (0, 1]. Default 1.0.
 
     Returns
     -------
@@ -184,11 +221,13 @@ def compute_zones(
         )
     if burn_duration_s <= 0:
         raise ValueError(f"burn_duration_s must be > 0, got {burn_duration_s}")
+    if not 0 < transmissivity <= 1:
+        raise ValueError(
+            f"transmissivity must be in (0, 1], got {transmissivity}"
+        )
 
-    # Total mass participating (upper bound: 100 % of tank contents).
     mass_kg = volume_m3 * fuel.vapor_density_kg_m3
 
-    # Blast energy (J).
     energy_joules = (
         mass_kg
         * fuel.lhv_kj_kg
@@ -196,7 +235,6 @@ def compute_zones(
         * combustion_efficiency
     )
 
-    # Thermal HRR (kW). Total combustion energy divided by burn duration.
     heat_release_rate_kw = (
         mass_kg
         * fuel.lhv_kj_kg
@@ -204,14 +242,29 @@ def compute_zones(
         / burn_duration_s
     )
 
+    if tank_diameter_m is None:
+        tank_diameter_m = _tank_diameter_from_volume(volume_m3)
+    if tank_height_m is None:
+        tank_height_m = tank_diameter_m
+    if tank_diameter_m <= 0 or tank_height_m <= 0:
+        raise ValueError(
+            f"tank_diameter_m and tank_height_m must be > 0, "
+            f"got {tank_diameter_m}, {tank_height_m}"
+        )
+
+    flame_height_m = flame_height_heskestad(
+        heat_release_rate_kw=heat_release_rate_kw,
+        pool_diameter_m=tank_diameter_m,
+    )
+    flame_height_m = max(flame_height_m, 1.0)
+    flame_diameter_m = tank_diameter_m
+
     nodes = _grid_nodes(bbox, resolution_m)
     records: list[ZoneRecord] = []
     for lat, lon in nodes:
         distance_m = _great_circle_distance_m(source_lat, source_lon, lat, lon)
         bearing = bearing_from_source(source_lat, source_lon, lat, lon)
 
-        # The source point itself is at distance 0 — clamp to half the
-        # grid resolution so the wind model can be called.
         distance_for_wind = max(distance_m, resolution_m / 2.0)
 
         eff_d = effective_distance(
@@ -221,14 +274,18 @@ def compute_zones(
             wind_speed_m_s=wind.speed_m_s,
         )
 
-        # Clamp effective distance to a sensible minimum so blast /
-        # thermal calls don't divide by zero at the source point.
         eff_d_clamped = max(0.1, eff_d)
 
-        blast_pa = blast_overpressure(distance_m=eff_d_clamped, energy_joules=energy_joules)
-        thermal_kw_m2 = point_source_flux(
+        blast_pa = blast_overpressure(
+            distance_m=eff_d_clamped, energy_joules=energy_joules
+        )
+        thermal_kw_m2 = solid_flame_flux(
             distance_m=eff_d_clamped,
-            heat_release_rate_kw=heat_release_rate_kw,
+            flame_height_m=flame_height_m,
+            flame_diameter_m=flame_diameter_m,
+            flame_temperature_k=fuel.flame_temperature_k,
+            emissivity=fuel.emissivity,
+            transmissivity=transmissivity,
         )
 
         severity = _severity_worst(blast_pa, thermal_kw_m2)
@@ -252,4 +309,7 @@ __all__ = [
     "compute_zones",
     "DEFAULT_COMBUSTION_EFFICIENCY",
     "DEFAULT_BURN_DURATION_S",
+    "DEFAULT_TANK_DIAMETER_M",
+    "DEFAULT_TANK_HEIGHT_M",
+    "DEFAULT_TRANSMISSIVITY",
 ]
