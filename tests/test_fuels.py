@@ -6,11 +6,14 @@ import pytest
 
 from der02.fuels import (
     AMMONIA,
+    DIESEL,
     ETHANOL,
     FUELS,
     GASOLINE,
     HYDROGEN,
+    KEROSENE,
     METHANE,
+    METHANOL,
     PROPANE,
     Fuel,
     get_fuel,
@@ -65,13 +68,86 @@ class TestEmissivity:
         assert AMMONIA.emissivity < 0.20
 
 
+class TestDiesel:
+    """Diesel (n-dodecane surrogate). NIST WebBook data.
+
+    ΔcH°(liquid) = -8086 kJ/mol (Prosen & Rossini 1945). 13 H₂O per mole.
+    LHV = (8086 - 13·44.01) / 0.1703348 ≈ 44,100 kJ/kg.
+    """
+
+    def test_lhv_matches_nist_derivation(self):
+        # C₁₂H₂₆ + 18.5 O₂ → 12 CO₂ + 13 H₂O; 13 mol H₂O per mol fuel.
+        n_water = 13
+        lhv_per_mol = 8086.0 - n_water * 44.01  # kJ/mol
+        lhv_per_kg = lhv_per_mol / 0.1703348 * 1000 / 1000  # kJ/kg
+        assert DIESEL.lhv_kj_kg == pytest.approx(lhv_per_kg, rel=0.01)
+
+    def test_molecular_weight_in_vapor_density(self):
+        # Dodecane MW = 170.3348 g/mol.
+        # Vapor density at 15 °C 1 atm from ideal gas.
+        expected = 170.3348 / 22.414 * 273.15 / 288.15
+        assert DIESEL.vapor_density_kg_m3 == pytest.approx(expected, rel=1e-6)
+
+    def test_diesel_is_liquid(self):
+        assert DIESEL.liquid_density_kg_m3 is not None
+        assert 700 < DIESEL.liquid_density_kg_m3 < 800
+
+    def test_diesel_denser_than_air(self):
+        # C₁₂H₂₆ is much heavier than air.
+        assert DIESEL.vapor_relative_to_air > 4.0
+
+
+class TestKerosene:
+    """Kerosene (n-dodecane surrogate for Jet A).
+
+    Kerosene is a C₁₀–C₁₆ mixture in reality; n-dodecane is the standard
+    clean surrogate.
+    """
+
+    def test_kerosene_uses_dodecane_constants(self):
+        assert KEROSENE.lhv_kj_kg == pytest.approx(DIESEL.lhv_kj_kg, rel=1e-9)
+        assert KEROSENE.cas == DIESEL.cas
+
+    def test_kerosene_distinct_from_diesel(self):
+        # Different fuel names; kerosene is a Jet A mix, diesel is heavier.
+        assert KEROSENE.name != DIESEL.name
+        assert KEROSENE.formula != DIESEL.formula
+
+
+class TestMethanol:
+    """Methanol (CH₃OH, CAS 67-56-1). LHV derivation from HHV."""
+
+    def test_lhv_matches_derivation(self):
+        # HHV = 725.7 kJ/mol (Wikipedia citing primary).
+        # 2 H₂O per mole. LHV = (725.7 - 2·44.01) / 0.032042 ≈ 19,910 kJ/kg.
+        hhv_kj_mol = 725.7
+        n_water = 2  # CH₃OH + 1.5 O₂ → CO₂ + 2 H₂O
+        lhv_per_mol = hhv_kj_mol - n_water * 44.01
+        lhv_per_kg = lhv_per_mol / 0.032042
+        assert METHANOL.lhv_kj_kg == pytest.approx(lhv_per_kg, rel=0.01)
+
+    def test_methanol_denser_than_air(self):
+        # MW 32 > air MW 29, so vapor heavier than air.
+        assert METHANOL.vapor_relative_to_air > 1.0
+
+    def test_methanol_is_liquid(self):
+        assert METHANOL.liquid_density_kg_m3 is not None
+        assert 750 < METHANOL.liquid_density_kg_m3 < 850
+
+
 class TestKnownFuels:
-    def test_all_six_fuels_present(self):
-        assert set(FUELS.keys()) == {"propane", "gasoline", "methane", "ethanol", "hydrogen", "ammonia"}
+    def test_all_nine_fuels_present(self):
+        assert set(FUELS.keys()) == {
+            "propane", "gasoline", "methane", "ethanol", "hydrogen",
+            "ammonia", "diesel", "kerosene", "methanol",
+        }
 
     def test_get_fuel_returns_correct_instance(self):
         assert get_fuel("propane") is PROPANE
         assert get_fuel("hydrogen") is HYDROGEN
+        assert get_fuel("diesel") is DIESEL
+        assert get_fuel("kerosene") is KEROSENE
+        assert get_fuel("methanol") is METHANOL
 
 
 class TestGetFuelErrors:

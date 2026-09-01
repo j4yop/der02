@@ -101,15 +101,20 @@ the Green Book or CCPS before operational use.**
 
 ## Per-ticket citation log
 
-- **Ticket 02** — Fuel library: see NIST WebBook references above.
+- **Ticket 02** — Fuel library: see NIST WebBook references above. 9 fuels: propane, gasoline (n-heptane surrogate), methane, ethanol, hydrogen, ammonia, diesel (n-dodecane surrogate), kerosene (n-dodecane surrogate for Jet A), methanol.
 - **Ticket 03** — Thresholds: CCPS *Guidelines for CPQRA* 2nd ed.,
   Table 2.x thermal radiation bands; CCPS overpressure damage criteria.
 - **Ticket 04** — Blast: TNO Green Book Ch. 6 (Multi-Energy strength
-  class 7). Curve values from consensus reproduction across van den
-  Berg 1985 / TNO / CCPS / Lees. **Not primary-verified.**
-- **Ticket 05** — Thermal: **solid-flame view-factor** model using Nusselt-analog numerical integration (Incropera et al. *Principles of Heat and Mass Transfer* 7th ed.). Closed-form Shokri-Beyler approximation (CCPS Ch. 2 / SFPE Handbook) was not implemented because the coefficients could not be primary-verified. **Per-fuel emissivity values from SFPE Handbook Table 5.3 — flagged not primary-verified.** Heskestad (1984) flame height correlation — simplified form only; full-form constants not primary-verified. Point-source flux fallback still exposed for comparison.
+  classes 1–10). Class-7 curve values from consensus reproduction across van den
+  Berg 1985 / TNO / CCPS / Lees. **Class-7 values not primary-verified;
+  classes 1–6 and 8–10 use derived amplitude scaling factors that are
+  also not primary-verified.**
+- **Ticket 05** — Thermal: **solid-flame view-factor** model using Nusselt-analog numerical integration (Incropera et al. *Principles of Heat and Mass Transfer* 7th ed.). Closed-form Shokri-Beyler approximation (CCPS Ch. 2 / SFPE Handbook) was not implemented because the coefficients could not be primary-verified. **Per-fuel emissivity values from SFPE Handbook Table 5.3 — flagged not primary-verified.** Heskestad (1984) flame height correlation in full form `H = 0.235·Q^(2/5) − 1.02·D`, clamped at 0 for the small-D regime. Point-source flux fallback still exposed for comparison.
 - **Ticket 06** — Wind: simplified CCPS dispersion correction (stretch factor); κ = 0.1 s/m default. **Real dispersion model deferred** (Britoil/EPA heavy-gas; Pasquill stability A–F).
-- **Ticket 07** — Zone orchestrator: CCPS combustion efficiency 0.4; TNO Green Book energy scaling. Bounding-box grid via pyproj.Geod (WGS84). Orchestrator now uses solid-flame thermal (ticket 05) instead of point-source. Multi-tank union via `compute_zones_multi(tanks, ...)` takes worst severity per grid point.
+- **Ticket 07** — Zone orchestrator: CCPS combustion efficiency 0.4 (configurable via UI); TNO Green Book energy scaling. Bounding-box grid via pyproj.Geod (WGS84). Orchestrator uses solid-flame thermal (ticket 05). Multi-tank union via `compute_zones_multi(tanks, ...)` takes worst severity per grid point. TNO strength class 1–10 selectable via parameter / UI slider.
+- **Ticket 11** — Diesel (n-dodecane surrogate), kerosene (Jet A, n-dodecane surrogate), methanol: NIST WebBook constants. Dodecane ΔcH°(liquid) = -8086 kJ/mol (Prosen & Rossini 1945) gives LHV ≈ 44,100 kJ/kg. Methanol HHV 725.7 kJ/mol gives LHV ≈ 19,910 kJ/kg. Liquid densities from CRC Handbook (flagged — not on public NIST WebBook species pages).
+- **Ticket 12** — GitHub Actions CI: pytest + ruff on push/PR across Python 3.11/3.12/3.13. PyPI publish workflow on release.
+- **Ticket 13** — PDF export: minimal hand-rolled PDF writer (no external deps) that embeds the HTML source as a text stream. For a rendered PDF, use the HTML download + browser print-to-PDF.
 - **Ticket 08** — Folium rendering: folium 0.20+, Shapely 2.0+ for
   convex-hull polygon construction. No physics citation; pure
   rendering.

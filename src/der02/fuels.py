@@ -124,6 +124,55 @@ AMMONIA = Fuel(
     emissivity=0.10,  # SFPE Handbook Table 5.3 (flagged: not primary-verified)
 )
 
+# Diesel (n-dodecane C₁₂H₂₆, CAS 112-40-3 surrogate).
+# NIST WebBook (Prosen & Rossini 1945): ΔcH°(liquid) = -8086.0 ± 1.2 kJ/mol.
+# C₁₂H₂₆ + 18.5 O₂ → 12 CO₂ + 13 H₂O, so 13 moles water per mole fuel.
+# LHV per kg: (8086 - 13·44.01) / 0.1703348 ≈ 44,100 kJ/kg.
+DIESEL = Fuel(
+    name="diesel",
+    formula="C12H26 (n-dodecane surrogate)",
+    cas="112-40-3",
+    lhv_kj_kg=44_100.0,  # NIST WebBook, Prosen & Rossini 1945; see derivation in research notes
+    flame_temperature_k=2280.0,  # Perry's 8th ed.; flagged
+    liquid_density_kg_m3=750.0,  # CRC Handbook at 15 °C; flagged (NIST WebBook lists ρc only)
+    vapor_density_kg_m3=170.3348 / 22.414 * 273.15 / 288.15,  # derived from MW
+    vapor_relative_to_air=170.3348 / 28.97,  # derived
+    nist_webbook_url="https://webbook.nist.gov/cgi/cbook.cgi?ID=C112403&Units=SI",
+    emissivity=0.30,  # SFPE Handbook Table 5.3 (flagged: not primary-verified)
+)
+
+# Kerosene (Jet A) — use n-dodecane as a clean surrogate.
+# Same constants as diesel (both use the same C₁₂ surrogate).
+# Flagged in name: real kerosene is a C₁₀–C₁₆ mixture.
+KEROSENE = Fuel(
+    name="kerosene",
+    formula="C12H26 (n-dodecane surrogate for Jet A)",
+    cas="112-40-3",
+    lhv_kj_kg=44_100.0,  # Same as diesel surrogate
+    flame_temperature_k=2280.0,  # Perry's 8th ed.; flagged
+    liquid_density_kg_m3=800.0,  # CRC Handbook for Jet A at 15 °C; flagged
+    vapor_density_kg_m3=170.3348 / 22.414 * 273.15 / 288.15,  # derived from MW
+    vapor_relative_to_air=170.3348 / 28.97,  # derived
+    nist_webbook_url="https://webbook.nist.gov/cgi/cbook.cgi?ID=C112403&Units=SI",
+    emissivity=0.30,  # SFPE Handbook Table 5.3 (flagged: not primary-verified)
+)
+
+# Methanol (CH₃OH, CAS 67-56-1).
+# Wikipedia (citing primary sources): HHV = 725.7 kJ/mol.
+# LHV per kg: (725.7 - 2·44.01) / 0.032042 ≈ 19,910 kJ/kg.
+METHANOL = Fuel(
+    name="methanol",
+    formula="CH3OH",
+    cas="67-56-1",
+    lhv_kj_kg=19_910.0,  # derived from HHV via NIST-style latent-heat correction
+    flame_temperature_k=2230.0,  # Perry's 8th ed.; flagged
+    liquid_density_kg_m3=792.0,  # CRC Handbook at 20 °C; flagged
+    vapor_density_kg_m3=32.042 / 22.414 * 273.15 / 288.15,  # derived from MW
+    vapor_relative_to_air=32.042 / 28.97,  # derived
+    nist_webbook_url="https://webbook.nist.gov/cgi/cbook.cgi?ID=C67561&Units=SI",
+    emissivity=0.20,  # SFPE Handbook Table 5.3 (flagged: not primary-verified)
+)
+
 
 FUELS: dict[str, Fuel] = {
     PROPANE.name: PROPANE,
@@ -132,6 +181,9 @@ FUELS: dict[str, Fuel] = {
     ETHANOL.name: ETHANOL,
     HYDROGEN.name: HYDROGEN,
     AMMONIA.name: AMMONIA,
+    DIESEL.name: DIESEL,
+    KEROSENE.name: KEROSENE,
+    METHANOL.name: METHANOL,
 }
 
 
@@ -156,5 +208,8 @@ __all__ = [
     "ETHANOL",
     "HYDROGEN",
     "AMMONIA",
+    "DIESEL",
+    "KEROSENE",
+    "METHANOL",
     "get_fuel",
 ]

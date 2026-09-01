@@ -18,11 +18,13 @@ UI layout
 
 from __future__ import annotations
 
+import io
 import math
 
 import streamlit as st
 from streamlit_folium import st_folium
 
+from der02.export import html_to_pdf_bytes
 from der02.fuels import FUELS, get_fuel
 from der02.map import MapRequest, render_map
 from der02.zones import BBox, WindConfig, compute_zones
@@ -42,7 +44,7 @@ DEFAULT_RESOLUTION_M: float = 100.0
 DISCLAIMER: str = (
     "Not for life-safety decisions. "
     "Consequence-modeling output is for planning and risk assessment only. "
-    "Values rely on the TNO Multi-Energy class-7 blast curve and the "
+    "Values rely on the TNO Multi-Energy blast curve and the "
     "solid-flame thermal model with Nusselt-analog view-factor "
     "integration. The TNO curve values and per-fuel emissivities are "
     "flagged as not primary-verified in CITATIONS.md — re-verify against "
@@ -130,6 +132,20 @@ with st.sidebar:
         step=50,
     )
 
+    st.header("Blast")
+    strength_class = st.slider(
+        "TNO strength class",
+        min_value=1,
+        max_value=10,
+        value=7,
+        step=1,
+        help="TNO Multi-Energy strength class: 1=unconfined deflagration, "
+        "10=highly confined/detonative. Class 7 is the standard siting "
+        "class for 'heavily congested on-shore module' per TNO/CCPS/GAME. "
+        "Values for non-7 classes are derived by amplitude scaling from "
+        "class 7 and are not primary-verified.",
+    )
+
     # Advanced controls — collapsed by default. Users who don't open
     # this section get the fuel-aware defaults.
     with st.expander("Advanced thermal", expanded=False):
@@ -215,6 +231,7 @@ records = compute_zones(
     tank_height_m=eff_height,
     transmissivity=float(transmissivity),
     combustion_efficiency=float(combustion_efficiency),
+    strength_class=int(strength_class),
 )
 # Note: emissivity override isn't a parameter on compute_zones (it
 # uses fuel.emissivity directly). For the advanced-override case we
@@ -264,6 +281,37 @@ for i, severity in enumerate(order):
         )
     else:
         cols[i].metric(label=severity.capitalize(), value="—")
+
+# ── Export ──────────────────────────────────────────────────────────
+st.subheader("Export")
+export_col1, export_col2 = st.columns(2)
+
+# Render the folium map to HTML bytes for download.
+_html_buffer = io.StringIO()
+fmap.save(_html_buffer, close_file=False)
+_html_str = _html_buffer.getvalue()
+
+with export_col1:
+    st.download_button(
+        label="Download map HTML",
+        data=_html_str.encode("utf-8"),
+        file_name="der02_map.html",
+        mime="text/html",
+        help="Open the file in a browser, then use the browser's "
+        "print-to-PDF for a rendered PDF. This is the supported "
+        "export path (no headless-browser dependency required).",
+    )
+
+with export_col2:
+    _pdf_bytes = html_to_pdf_bytes(_html_str)
+    st.download_button(
+        label="Download map PDF (text-only)",
+        data=_pdf_bytes,
+        file_name="der02_map.pdf",
+        mime="application/pdf",
+        help="Text-only PDF containing the HTML source. For a rendered "
+        "map PDF, use the HTML download and the browser's print-to-PDF.",
+    )
 
 # ── Footer / disclaimer ───────────────────────────────────────────────
 st.markdown("---")

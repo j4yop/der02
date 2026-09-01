@@ -194,6 +194,7 @@ def compute_zones(
     tank_diameter_m: float | None = None,
     tank_height_m: float | None = None,
     transmissivity: float = DEFAULT_TRANSMISSIVITY,
+    strength_class: int = 7,
 ) -> list[ZoneRecord]:
     """Compute hazard zones over a grid.
 
@@ -223,6 +224,8 @@ def compute_zones(
         Cylindrical tank height, m. If None, equals tank_diameter_m.
     transmissivity
         Atmospheric transmissivity, dimensionless ∈ (0, 1]. Default 1.0.
+    strength_class
+        TNO Multi-Energy strength class, 1..10. Default 7.
 
     Returns
     -------
@@ -241,6 +244,8 @@ def compute_zones(
         raise ValueError(
             f"transmissivity must be in (0, 1], got {transmissivity}"
         )
+    if strength_class not in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10):
+        raise ValueError(f"strength_class must be in 1..10, got {strength_class}")
 
     mass_kg = volume_m3 * fuel.vapor_density_kg_m3
 
@@ -293,7 +298,9 @@ def compute_zones(
         eff_d_clamped = max(0.1, eff_d)
 
         blast_pa = blast_overpressure(
-            distance_m=eff_d_clamped, energy_joules=energy_joules
+            distance_m=eff_d_clamped,
+            energy_joules=energy_joules,
+            strength_class=strength_class,
         )
         thermal_kw_m2 = solid_flame_flux(
             distance_m=eff_d_clamped,
@@ -326,6 +333,7 @@ def compute_zones_multi(
     combustion_efficiency: float = DEFAULT_COMBUSTION_EFFICIENCY,
     burn_duration_s: float = DEFAULT_BURN_DURATION_S,
     transmissivity: float = DEFAULT_TRANSMISSIVITY,
+    strength_class: int = 7,
 ) -> list[ZoneRecord]:
     """Compute hazard zones for a multi-tank facility.
 
@@ -379,6 +387,7 @@ def compute_zones_multi(
             tank_diameter_m=tank.tank_diameter_m,
             tank_height_m=tank.tank_height_m,
             transmissivity=transmissivity,
+            strength_class=strength_class,
         )
         per_tank.append(records)
 

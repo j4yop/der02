@@ -47,6 +47,60 @@ class TestBlastValidation:
         with pytest.raises(ValueError, match="ambient_pressure_pa"):
             blast_overpressure(100.0, 1.0e9, ambient_pressure_pa=-1.0)
 
+    def test_invalid_class_raises(self):
+        with pytest.raises(ValueError, match="strength_class"):
+            blast_overpressure(100.0, 1.0e9, strength_class=0)
+        with pytest.raises(ValueError, match="strength_class"):
+            blast_overpressure(100.0, 1.0e9, strength_class=11)
+
+
+class TestStrengthClass:
+    """TNO Multi-Energy strength class 1..10."""
+
+    def test_class_7_is_default(self):
+        # Default call should match explicit class 7.
+        p1 = blast_overpressure(100.0, 1.0e9)
+        p2 = blast_overpressure(100.0, 1.0e9, strength_class=7)
+        assert p1 == pytest.approx(p2, rel=1e-12)
+
+    def test_class_10_higher_than_class_7(self):
+        # Class 10 is detonative; should give much higher overpressure.
+        p7 = blast_overpressure(100.0, 1.0e9, strength_class=7)
+        p10 = blast_overpressure(100.0, 1.0e9, strength_class=10)
+        assert p10 > p7
+
+    def test_class_1_lower_than_class_7(self):
+        # Class 1 is unconfined; should give much lower overpressure.
+        p1 = blast_overpressure(100.0, 1.0e9, strength_class=1)
+        p7 = blast_overpressure(100.0, 1.0e9, strength_class=7)
+        assert p1 < p7
+
+    def test_class_ordering_monotonic(self):
+        # Higher class → higher overpressure (per the amplitude factors).
+        ps = [
+            blast_overpressure(50.0, 1.0e9, strength_class=c)
+            for c in range(1, 11)
+        ]
+        for i in range(1, len(ps)):
+            assert ps[i] >= ps[i - 1], (
+                f"Class {i + 1} should be ≥ class {i}: {ps[i]} vs {ps[i - 1]}"
+            )
+
+    def test_amplitude_factor_applied_uniformly(self):
+        # For a given (R, E), the ratio p_class7 / p_class3 should equal
+        # the amplitude factor ratio.
+        p3 = blast_overpressure(100.0, 1.0e9, strength_class=3)
+        p7 = blast_overpressure(100.0, 1.0e9, strength_class=7)
+        from der02.blast import CLASS_AMPLITUDE_FACTORS
+        expected_ratio = CLASS_AMPLITUDE_FACTORS[7] / CLASS_AMPLITUDE_FACTORS[3]
+        actual_ratio = p7 / p3
+        assert actual_ratio == pytest.approx(expected_ratio, rel=1e-9)
+
+    def test_all_ten_classes_run(self):
+        for c in range(1, 11):
+            p = blast_overpressure(100.0, 1.0e9, strength_class=c)
+            assert p > 0
+
 
 class TestBlastClamping:
     def test_far_field_clamps_to_Z_max_endpoint(self):

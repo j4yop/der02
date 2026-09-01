@@ -2,7 +2,7 @@
 
 Web-native consequence modeling. Given a tank of fuel, the wind, and the location, compute the blast overpressure and thermal radiation zones around it on a real map.
 
-**Blast** via the [TNO Multi-Energy method](https://doi.org/10.1016/0304-3894(85)87002-3) (industry standard for vapor cloud explosions). **Thermal** via the point-source flux (CCPS / ALOHA convention). **Wind distortion** elongates zones downwind, compresses them upwind. **Six fuels** with NIST-sourced constants (propane, gasoline, methane, ethanol, hydrogen, ammonia).
+**Blast** via the [TNO Multi-Energy method](https://doi.org/10.1016/0304-3894(85)87002-3) (industry standard for vapor cloud explosions), **strength class 1–10 selectable**. **Thermal** via the point-source flux (CCPS / ALOHA convention) + **solid-flame** with Nusselt-analog view-factor integration. **Wind distortion** elongates zones downwind, compresses them upwind. **Nine fuels** with NIST-sourced constants (propane, gasoline, methane, ethanol, hydrogen, ammonia, **diesel, kerosene, methanol**). **Multi-tank** support via worst-of-per-point union.
 
 ⚠️ **Not for life-safety decisions.** Consequence-modeling output is for planning and risk assessment only. The TNO curve values are flagged as not primary-verified in [CITATIONS.md](CITATIONS.md) — re-verify against the TNO Green Book Ch. 6 before any operational use.
 
@@ -43,21 +43,31 @@ Runs a 1000 kg methane vapor-cloud-explosion scenario end to end and prints the 
 ```
 der02/
 ├── src/der02/             # the package
-│   ├── fuels.py           # 6 substances, NIST WebBook constants
+│   ├── fuels.py           # 9 substances, NIST WebBook constants
 │   ├── thresholds.py      # CCPS severity bands (37.5/12.5/4 kW/m²; 100/30/10 kPa)
-│   ├── blast.py           # TNO Multi-Energy strength class 7, log-log interpolated
+│   ├── blast.py           # TNO Multi-Energy strength classes 1–10, log-log interpolated
 │   ├── thermal.py         # Solid-flame flux with Nusselt-analog view-factor integration
 │   ├── wind.py            # Effective-distance distortion + bearing
 │   ├── zones.py           # Grid orchestrator: blast + thermal + wind per node (single + multi-tank)
-│   └── map.py             # Folium rendering: polygons, marker, wind arrow, legend
+│   ├── map.py             # Folium rendering: polygons, marker, wind arrow, legend
+│   └── export.py          # HTML / PDF export helpers (no external deps)
 ├── tests/                 # one test file per module
 │   └── manual_checklist.md   # what an evaluator can check by eye
+├── .github/workflows/     # CI (pytest + ruff on push/PR) + PyPI publish on release
 ├── app.py                 # Streamlit UI
 ├── examples/
-│   └── worked_example.py  # end-to-end scenario
+│   └── worked_example.py  # end-to-end scenario (--pdf out.pdf for summary)
 ├── SPEC.md                # the spec this project is built against
 ├── CITATIONS.md           # every reference, with status flags
 └── DEMO.md                # 2-minute demo script
+```
+
+## Installation
+
+```bash
+pip install -e ".[dev]"   # local development
+# or, once published to PyPI:
+pip install der02
 ```
 
 ## How the physics works
@@ -114,6 +124,39 @@ See `src/der02/thresholds.py` and [CITATIONS.md](CITATIONS.md) for the source of
 ## Why this exists
 
 Commercial consequence-modeling software exists (DNV PHAST, GexCon EFFECTS, ALOHA) but is either expensive ($50k+/year), desktop-bound, or dated. **der02** is an open alternative with modern UI, validated physics, and a permissive license. It is not a replacement for those tools — it is a starting point for teaching, learning, and lightweight planning.
+
+## Multi-tank usage
+
+```python
+from der02.fuels import PROPANE, HYDROGEN
+from der02.zones import BBox, Tank, WindConfig, compute_zones_multi
+
+tanks = [
+    Tank(fuel=PROPANE, volume_m3=1000.0, lat=0.0, lon=0.0, label="Tank A"),
+    Tank(fuel=HYDROGEN, volume_m3=500.0, lat=0.001, lon=0.001, label="Tank B"),
+]
+records = compute_zones_multi(
+    tanks=tanks,
+    bbox=BBox(-0.02, -0.02, 0.02, 0.02),
+    wind=WindConfig(speed_m_s=10.0, from_direction_deg=0.0),
+)
+# Severity at each grid point is worst-of across all tanks.
+```
+
+## Strength class selection
+
+TNO Multi-Energy classes 1–10 are exposed via the `strength_class` parameter on `blast_overpressure` and `compute_zones`:
+
+| Class | Description | Default |
+|---|---|---|
+| 1–2 | Unconfined deflagration | |
+| 3–4 | Partial confinement | |
+| 5–6 | Moderate confinement | |
+| **7** | **Heavily congested on-shore module** (TNO/CCPS/GAME) | ✓ |
+| 8–9 | Heavy confinement | |
+| 10 | Detonative | |
+
+Class 7 is the standard siting class. Class 1–6 and 8–10 use a derived amplitude scaling from class 7 (per-curve values are not primary-verified — see `src/der02/blast.py`).
 
 ## Limitations
 
