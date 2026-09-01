@@ -29,7 +29,8 @@ dev = [
 ]
 
 [project.urls]
-"Source code" = "https://github.com/example/der02"
+"Source code" = "https://github.com/j4yop/der02"
+"Issues" = "https://github.com/j4yop/der02/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
