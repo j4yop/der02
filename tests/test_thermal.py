@@ -107,19 +107,16 @@ class TestModuleConstants:
 
 
 class TestHeskestadFlameHeight:
-    """Heskestad (1984) simplified dimensional form:
+    """Heskestad (1984) correlation:
 
-        H = 0.235 · Q^(2/5)        [Q in kW, H in m]
+        H = 0.235 · Q^(2/5) − 1.02 · D
 
-    The classical Heskestad formula includes a −1.02·D correction term
-    for very small pool diameters; we omit it (see thermal.py for
-    rationale). pool_diameter_m is accepted but not consumed in the
-    simplified form.
+    with H and D in metres, Q in kW.
     """
 
-    def test_returns_positive_height(self):
+    def test_returns_non_negative(self):
         h = flame_height_heskestad(heat_release_rate_kw=1000.0, pool_diameter_m=2.0)
-        assert h > 0.0
+        assert h >= 0.0
 
     def test_returns_positive_for_typical_fire(self):
         # 1 MW, 2 m diameter → reasonable flame height.
@@ -133,17 +130,23 @@ class TestHeskestadFlameHeight:
         assert large > small
 
     def test_scales_correctly_with_Q(self):
-        # 100× Q → H scales by 100^(2/5) ≈ 6.31.
-        q1, q2 = 100.0, 10_000.0
-        h1 = flame_height_heskestad(heat_release_rate_kw=q1, pool_diameter_m=1.0)
-        h2 = flame_height_heskestad(heat_release_rate_kw=q2, pool_diameter_m=1.0)
-        assert h2 / h1 == pytest.approx(100**0.4, rel=1e-9)
+        # 100× Q → H scales by 100^(2/5) ≈ 6.31 (when the −1.02·D
+        # term is negligible). Use very small D and large Q so the
+        # Q^(2/5) term dominates the −1.02·D correction.
+        h1 = flame_height_heskestad(heat_release_rate_kw=100_000.0, pool_diameter_m=0.01)
+        h2 = flame_height_heskestad(heat_release_rate_kw=10_000_000.0, pool_diameter_m=0.01)
+        assert h2 / h1 == pytest.approx((100.0) ** 0.4, rel=1e-3)
 
-    def test_pool_diameter_accepted_but_not_consumed(self):
-        # Pool diameter is informational; result depends only on Q.
-        h_a = flame_height_heskestad(heat_release_rate_kw=1000.0, pool_diameter_m=2.0)
-        h_b = flame_height_heskestad(heat_release_rate_kw=1000.0, pool_diameter_m=10.0)
-        assert h_a == h_b
+    def test_diameter_term_can_dominate(self):
+        # For large D and small Q, the −1.02·D term can dominate
+        # and even drive H negative. We clamp at 0.
+        h = flame_height_heskestad(heat_release_rate_kw=10.0, pool_diameter_m=20.0)
+        assert h == 0.0
+
+    def test_negative_clamped_to_zero(self):
+        # Negative intermediate value must be clamped at 0.
+        h = flame_height_heskestad(heat_release_rate_kw=1.0, pool_diameter_m=10.0)
+        assert h == 0.0
 
     def test_validation(self):
         with pytest.raises(ValueError, match="heat_release_rate_kw"):

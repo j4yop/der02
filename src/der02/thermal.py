@@ -82,46 +82,37 @@ def flame_height_heskestad(heat_release_rate_kw: float, pool_diameter_m: float) 
     """Heskestad flame height correlation for a free-burning buoyant
     diffusion flame.
 
-        H = 0.235 · Q^(2/5)        [Q in kW, H in m]
+        H = 0.235 · Q^(2/5) − 1.02 · D    [Q in kW, H and D in m]
 
-    This is the simplified dimensional form valid for fires with
-    diameter larger than ~0.4 m (i.e. essentially all industrial
-    fires). The classical Heskestad form includes a −1.02·D correction
-    term for very small D; we omit it because:
+    Includes the −1.02·D correction term for the small-diameter
+    regime. For typical industrial fires (D > 1 m) the correction is
+    negligible; for small laboratory burners (D < 0.5 m) it dominates
+    and can drive the predicted H negative, in which case the value
+    is clamped at 0.
 
-      - The constants are not primary-verified from open sources
-        (SFPE Handbook was unreachable during research).
-      - For typical industrial pool diameters (D > 1 m), the
-        correction is small relative to the 0.235 · Q^(2/5) term.
-      - When the −1.02·D term dominates (small Q on large D), the
-        formula predicts negative flame height, which is physically
-        meaningless and would force callers to clamp at 0 anyway.
+    Source: Heskestad, G. (1984). "Engineering relations for fire
+    plumes." *Fire Technology* 20(1), 31–43. **Not primary-verified**
+    — see `.scratch/solid-flame-research.md` §1.
 
     Parameters
     ----------
     heat_release_rate_kw
         Total heat release rate of the fire, kW. Must be > 0.
     pool_diameter_m
-        Diameter of the circular pool / burner base, m. Used for
-        information / documentation; not consumed by the simplified
-        formula.
+        Diameter of the circular pool / burner base, m. Must be > 0.
 
     Returns
     -------
     float
-        Mean flame height, metres.
+        Mean flame height, metres. Clamped at ≥ 0.
 
     Raises
     ------
     ValueError
-        On non-positive Q.
+        On non-positive Q or D.
 
     Notes
     -----
-    Source: Heskestad, G. (1984). "Engineering relations for fire
-    plumes." *Fire Technology* 20(1), 31–43. **Not primary-verified**
-    — see `.scratch/solid-flame-research.md` §1.
-
     Validity:
       - Q > ~1 kW (smaller flames have continuous flame structure
         that breaks the correlation).
@@ -136,7 +127,8 @@ def flame_height_heskestad(heat_release_rate_kw: float, pool_diameter_m: float) 
     if pool_diameter_m <= 0:
         raise ValueError(f"pool_diameter_m must be > 0, got {pool_diameter_m}")
 
-    return 0.235 * heat_release_rate_kw**0.4
+    h = 0.235 * heat_release_rate_kw**0.4 - 1.02 * pool_diameter_m
+    return max(0.0, h)
 
 
 def shokri_beyler_view_factor(

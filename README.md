@@ -46,9 +46,9 @@ der02/
 │   ├── fuels.py           # 6 substances, NIST WebBook constants
 │   ├── thresholds.py      # CCPS severity bands (37.5/12.5/4 kW/m²; 100/30/10 kPa)
 │   ├── blast.py           # TNO Multi-Energy strength class 7, log-log interpolated
-│   ├── thermal.py         # Point-source flux (solid-flame deferred)
+│   ├── thermal.py         # Solid-flame flux with Nusselt-analog view-factor integration
 │   ├── wind.py            # Effective-distance distortion + bearing
-│   ├── zones.py           # Grid orchestrator: blast + thermal + wind per node
+│   ├── zones.py           # Grid orchestrator: blast + thermal + wind per node (single + multi-tank)
 │   └── map.py             # Folium rendering: polygons, marker, wind arrow, legend
 ├── tests/                 # one test file per module
 │   └── manual_checklist.md   # what an evaluator can check by eye
@@ -118,12 +118,10 @@ Commercial consequence-modeling software exists (DNV PHAST, GexCon EFFECTS, ALOH
 ## Limitations
 
 - **TNO curve values are not primary-verified.** The TNO Green Book PDF was removed from public web. The consensus class-7 curve is reproduced across van den Berg 1985 / TNO / CCPS / Lees, but every constant should be checked against the Green Book before operational use.
-- **Solid-flame thermal model uses numerical view-factor integration.** The closed-form Shokri-Beyler approximation was not implemented because the constants were not primary-verified. The numerical integration of the Nusselt analog is correct by construction but slower. Per-fuel emissivities (SFPE Handbook Table 5.3) are flagged as not primary-verified.
-- **Heskestad flame height uses the simplified dimensional form** (`H = 0.235 · Q^(2/5)`). The full form including a −1.02·D correction for very small D was omitted because the constants were not primary-verified. For typical industrial fires (D > 1 m), the correction is small.
+- **Solid-flame thermal model uses Nusselt-analog numerical integration.** Closed-form approximations (Shokri-Beyler 1989, Mudan 1984) exist in the literature but were not implemented because the constants could not be primary-verified. The numerical integration of `cos θ₁ · cos θ₂ / (π s²) · dA` over a discretised cylinder is **correct by construction** and has been verified against the Lambertian analytic limit (small-source approximation). Per-fuel emissivities (SFPE Handbook Table 5.3) are flagged as not primary-verified.
+- **Heskestad flame height uses the full form** `H = 0.235 · Q^(2/5) − 1.02 · D`, clamped at 0 for the small-D regime where the correction term would dominate. For typical industrial fires (D > 1 m), the −1.02·D correction is small.
 - **Wind distortion is a heuristic.** Real dispersion modeling (Britoil/EPA heavy-gas, Pasquill stability A–F) is out of scope.
-- **Single tank only.** Multi-tank union is not implemented.
 - **No toxic gas dispersion.** No dispersion model for chlorine, ammonia, or other dense gases.
-- **Combustion efficiency hardcoded at 0.4.** Site-specific override is supported via parameter but not exposed in the UI.
 
 ## Contributing
 

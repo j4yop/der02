@@ -8,8 +8,10 @@ from der02.fuels import PROPANE
 from der02.zones import (
     DEFAULT_COMBUSTION_EFFICIENCY,
     BBox,
+    Tank,
     WindConfig,
     compute_zones,
+    compute_zones_multi,
 )
 
 
@@ -249,3 +251,80 @@ class TestGridGeneration:
 class TestModuleConstants:
     def test_default_efficiency_in_range(self):
         assert 0 < DEFAULT_COMBUSTION_EFFICIENCY <= 1
+
+
+class TestComputeZonesMulti:
+    """Multi-tank union: worst-of per grid point."""
+
+    def test_empty_tanks_returns_empty(self, small_bbox, no_wind):
+        records = compute_zones_multi(
+            tanks=[], bbox=small_bbox, wind=no_wind
+        )
+        assert records == []
+
+    def test_single_tank_matches_single_compute(self, small_bbox, no_wind):
+        from der02.fuels import PROPANE
+
+        single = compute_zones(
+            fuel=PROPANE, volume_m3=1000.0,
+            source_lat=0.0, source_lon=0.0,
+            bbox=small_bbox, wind=no_wind, resolution_m=100.0,
+        )
+        multi = compute_zones_multi(
+            tanks=[Tank(fuel=PROPANE, volume_m3=1000.0, lat=0.0, lon=0.0)],
+            bbox=small_bbox, wind=no_wind, resolution_m=100.0,
+        )
+        assert len(single) == len(multi)
+        for s, m in zip(single, multi):
+            assert s.lat == m.lat
+            assert s.lon == m.lon
+            assert s.severity == m.severity
+            assert s.blast_pa == pytest.approx(m.blast_pa, rel=1e-9)
+            assert s.thermal_kw_m2 == pytest.approx(m.thermal_kw_m2, rel=1e-9)
+
+    def test_two_tanks_take_worst_severity(self, small_bbox, no_wind):
+        from der02.fuels import HYDROGEN, PROPANE
+
+        # Tank 1: propane at (0, 0). Tank 2: hydrogen at (0.001, 0).
+        # Hydrogen's low density → smaller zones → tank 1 dominates.
+        records = compute_zones_multi(
+            tanks=[
+                Tank(fuel=PROPANE, volume_m3=1000.0, lat=0.0, lon=0.0),
+                Tank(fuel=HYDROGEN, volume_m3=1000.0, lat=0.001, lon=0.0),
+            ],
+            bbox=small_bbox, wind=no_wind, resolution_m=100.0,
+        )
+        propane_only = compute_zones(
+            fuel=PROPANE, volume_m3=1000.0,
+            source_lat=0.0, source_lon=0.0,
+            bbox=small_bbox, wind=no_wind, resolution_m=100.0,
+        )
+        severity_order = {"safe": 0, "caution": 1, "danger": 2, "lethal": 3}
+        for m, p in zip(records, propane_only):
+            assert severity_order[m.severity] >= severity_order[p.severity]
+
+    def test_multi_tank_extends_zones(self, small_bbox, no_wind):
+        from der02.fuels import PROPANE
+
+        single = compute_zones(
+            fuel=PROPANE, volume_m3=1000.0,
+            source_lat=0.0, source_lon=0.0,
+            bbox=small_bbox, wind=no_wind, resolution_m=200.0,
+        )
+        multi = compute_zones_multi(
+            tanks=[
+                Tank(fuel=PROPANE, volume_m3=1000.0, lat=0.0, lon=0.0),
+                Tank(fuel=PROPANE, volume_m3=1000.0, lat=0.002, lon=0.002),
+            ],
+            bbox=small_bbox, wind=no_wind, resolution_m=200.0,
+        )
+        single_nonsafe = sum(1 for r in single if r.severity != "safe")
+        multi_nonsafe = sum(1 for r in multi if r.severity != "safe")
+        assert multi_nonsafe >= single_nonsafe
+
+    def test_multi_tank_validation(self, small_bbox, no_wind):
+        with pytest.raises(ValueError):
+            compute_zones_multi(
+                tanks=[Tank(fuel=PROPANE, volume_m3=-1.0, lat=0.0, lon=0.0)],
+                bbox=small_bbox, wind=no_wind, resolution_m=100.0,
+            )

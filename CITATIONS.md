@@ -109,7 +109,7 @@ the Green Book or CCPS before operational use.**
   Berg 1985 / TNO / CCPS / Lees. **Not primary-verified.**
 - **Ticket 05** — Thermal: **solid-flame view-factor** model using Nusselt-analog numerical integration (Incropera et al. *Principles of Heat and Mass Transfer* 7th ed.). Closed-form Shokri-Beyler approximation (CCPS Ch. 2 / SFPE Handbook) was not implemented because the coefficients could not be primary-verified. **Per-fuel emissivity values from SFPE Handbook Table 5.3 — flagged not primary-verified.** Heskestad (1984) flame height correlation — simplified form only; full-form constants not primary-verified. Point-source flux fallback still exposed for comparison.
 - **Ticket 06** — Wind: simplified CCPS dispersion correction (stretch factor); κ = 0.1 s/m default. **Real dispersion model deferred** (Britoil/EPA heavy-gas; Pasquill stability A–F).
-- **Ticket 07** — Zone orchestrator: CCPS combustion efficiency 0.4; TNO Green Book energy scaling. Bounding-box grid via pyproj.Geod (WGS84). Orchestrator now uses solid-flame thermal (ticket 05) instead of point-source.
+- **Ticket 07** — Zone orchestrator: CCPS combustion efficiency 0.4; TNO Green Book energy scaling. Bounding-box grid via pyproj.Geod (WGS84). Orchestrator now uses solid-flame thermal (ticket 05) instead of point-source. Multi-tank union via `compute_zones_multi(tanks, ...)` takes worst severity per grid point.
 - **Ticket 08** — Folium rendering: folium 0.20+, Shapely 2.0+ for
   convex-hull polygon construction. No physics citation; pure
   rendering.

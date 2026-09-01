@@ -99,6 +99,22 @@ class BBox:
     max_lon: float
 
 
+@dataclass(frozen=True)
+class Tank:
+    """A single tank at a given location.
+
+    Used by `compute_zones_multi` to model multi-tank facilities.
+    """
+
+    fuel: Fuel
+    volume_m3: float
+    lat: float
+    lon: float
+    tank_diameter_m: float | None = None
+    tank_height_m: float | None = None
+    label: str = ""
+
+
 # Default combustion efficiency for vapor cloud explosions.
 DEFAULT_COMBUSTION_EFFICIENCY: float = 0.4
 
@@ -302,11 +318,95 @@ def compute_zones(
     return records
 
 
+def compute_zones_multi(
+    tanks: list[Tank],
+    bbox: BBox,
+    wind: WindConfig,
+    resolution_m: float = 100.0,
+    combustion_efficiency: float = DEFAULT_COMBUSTION_EFFICIENCY,
+    burn_duration_s: float = DEFAULT_BURN_DURATION_S,
+    transmissivity: float = DEFAULT_TRANSMISSIVITY,
+) -> list[ZoneRecord]:
+    """Compute hazard zones for a multi-tank facility.
+
+    For each grid node over the bbox, computes blast + thermal from
+    every tank and takes the **worst severity** (lethal > danger >
+    caution > safe). Other fields (blast_pa, thermal_kw_m2, distance_m)
+    come from the tank that produced the worst severity; if multiple
+    tanks tie, the highest blast_pa wins.
+
+    Parameters
+    ----------
+    tanks
+        List of `Tank` objects. Empty list returns an empty list.
+    bbox
+        Bounding box of the region to model.
+    wind
+        Wind configuration applied to every tank.
+    resolution_m
+        Grid spacing, metres. Default 100 m.
+    combustion_efficiency
+        Fraction of fuel energy participating in the blast (per tank).
+    burn_duration_s
+        Burn duration for thermal HRR (per tank).
+    transmissivity
+        Atmospheric transmissivity (per tank).
+
+    Returns
+    -------
+    list[ZoneRecord]
+        One record per grid node, severity-wise worst across tanks.
+    """
+    if not tanks:
+        return []
+
+    # Build the union grid once.
+    nodes = _grid_nodes(bbox, resolution_m)
+
+    # Compute per-tank zone records keyed by grid index.
+    per_tank: list[list[ZoneRecord]] = []
+    for tank in tanks:
+        records = compute_zones(
+            fuel=tank.fuel,
+            volume_m3=tank.volume_m3,
+            source_lat=tank.lat,
+            source_lon=tank.lon,
+            bbox=bbox,
+            wind=wind,
+            resolution_m=resolution_m,
+            combustion_efficiency=combustion_efficiency,
+            burn_duration_s=burn_duration_s,
+            tank_diameter_m=tank.tank_diameter_m,
+            tank_height_m=tank.tank_height_m,
+            transmissivity=transmissivity,
+        )
+        per_tank.append(records)
+
+    severity_order = {"safe": 0, "caution": 1, "danger": 2, "lethal": 3}
+
+    # Worst-of merge per grid node.
+    merged: list[ZoneRecord] = []
+    for i in range(len(nodes)):
+        best: ZoneRecord | None = None
+        best_key = (-1, -1.0)  # (severity_rank, blast_pa)
+        for records in per_tank:
+            r = records[i]
+            key = (severity_order[r.severity], r.blast_pa)
+            if key > best_key:
+                best = r
+                best_key = key
+        assert best is not None
+        merged.append(best)
+    return merged
+
+
 __all__ = [
     "ZoneRecord",
     "WindConfig",
     "BBox",
+    "Tank",
     "compute_zones",
+    "compute_zones_multi",
     "DEFAULT_COMBUSTION_EFFICIENCY",
     "DEFAULT_BURN_DURATION_S",
     "DEFAULT_TANK_DIAMETER_M",

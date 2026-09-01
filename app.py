@@ -156,6 +156,16 @@ with st.sidebar:
             step=0.05,
             help="Path-length / humidity correction. Default 1.0 (no loss).",
         )
+        combustion_efficiency = st.slider(
+            "Combustion efficiency",
+            min_value=0.05,
+            max_value=1.0,
+            value=0.4,
+            step=0.05,
+            help="Fraction of fuel energy participating in the blast. "
+            "CCPS / TNO typical 0.4 for partially confined VCE; "
+            "higher for highly confined or detonative cases.",
+        )
         override_tank = st.checkbox(
             "Override tank dimensions",
             value=False,
@@ -204,6 +214,7 @@ records = compute_zones(
     tank_diameter_m=eff_diameter,
     tank_height_m=eff_height,
     transmissivity=float(transmissivity),
+    combustion_efficiency=float(combustion_efficiency),
 )
 # Note: emissivity override isn't a parameter on compute_zones (it
 # uses fuel.emissivity directly). For the advanced-override case we
