@@ -18,6 +18,15 @@ Source of fuel constants: heat of combustion, vapor density, flame temperature. 
 
 ## Per-ticket citation log
 
+- **Ticket 02** — Fuel library: NIST WebBook (SRD 69) species pages for ΔcH° and MW of propane, methane, ethanol, hydrogen, ammonia, n-heptane (gasoline surrogate). Per-species reference lists:
+  - Propane (C₃H₈, CAS 74-98-6): Pittam & Pilcher 1972 (*J. Chem. Soc. Faraday Trans. 1* 68, 2224); Younglove & Ely 1987 (*J. Phys. Chem. Ref. Data* 16, 577 — liquid density at 15 °C).
+  - n-Heptane (C₇H₁₆, CAS 142-82-5): Prosen & Rossini 1945 (*J. Res. NBS*); Davies & Gilbert 1941 (*J. Am. Chem. Soc.* 63, 2730).
+  - Methane (CH₄, CAS 74-82-8): Pittam & Pilcher 1972; Manion 2002 (recommended ΔfH°); Chase 1998 (NIST-JANAF).
+  - Ethanol (C₂H₅OH, CAS 64-17-5): Chao & Rossini 1965; Green 1960; Rossini 1932.
+  - Hydrogen (H₂, CAS 1333-74-0): Cox, Wagman 1984 (CODATA key values); Chase 1998.
+  - Ammonia (NH₃, CAS 7664-41-7): Cox, Wagman 1984; Chase 1998.
+  - Adiabatic flame temperatures: Perry's Chemical Engineers' Handbook 8th ed., NIST-JANAF Thermochemical Tables (Chase 1998). **Flagged: not directly listed on NIST WebBook species pages; verification by equilibrium calculation recommended.**
+  - Liquid densities at 15 °C: CRC Handbook, Younglove & Ely 1987 (propane), NIST TRC Web Thermo Tables (subscription database, linked from species pages). **Flagged: public WebBook species pages list ρ_crit only, not 15 °C ρ.**
 - **Ticket 03** — Thresholds: CCPS *Guidelines for CPQRA* 2nd ed., Table 2.x thermal radiation bands; CCPS overpressure damage criteria.
 - **Ticket 04** — Blast: TNO Green Book Ch. 6, Multi-Energy strength class 7. Worked example reference: TNO Green Book worked example X.
 - **Ticket 05** — Thermal: CCPS *Guidelines for CPQRA* 2nd ed., Ch. 2 (solid-flame model); API RP 521 (flame height).
