@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "der02"
+version = "0.1.0"
+description = "Threat-zone estimation for industrial fire and explosion response. TNO blast overpressure and solid-flame thermal radiation with wind distortion, drawn on a real map."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "der02 contributors" }]
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "shapely>=2.0",
+    "geopandas>=0.14",
+    "pyproj>=3.6",
+    "folium>=0.15",
+    "streamlit>=1.32",
+    "streamlit-folium>=0.18",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "ruff>=0.3",
+]
+
+[project.urls]
+"Source code" = "https://github.com/example/der02"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B"]
