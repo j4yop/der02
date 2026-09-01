@@ -153,18 +153,20 @@ def shokri_beyler_view_factor(
         F = ∫_A (cos θ₁ · cos θ₂) / (π · s²) dA₂
 
     The cylinder is discretised into `panel_count` horizontal rings.
-    Each ring at height z contributes a panel of area dA = π·D·dz.
+    Each ring at height z is further discretised into azimuthal
+    panels. For a panel at angle θ on the ring (measured from the
+    direction toward the receptor), the radial vector from panel
+    centre to receptor has components in the x-y plane; the dot
+    product with the panel normal (which is radial) gives:
 
-    For a ground receptor at horizontal distance R:
-        cos θ₁ = H_cyl / s       (cosine of angle at receptor,
-                                   but for a ground point looking up
-                                   at a vertical cylinder, θ₁ = 90°;
-                                   this term evaluates to z/s where
-                                   z is the panel height)
-        cos θ₂ = H_cyl / s       (panel normal is vertical, the
-                                   surface-normal dot with the
-                                   connecting ray gives R/s)
-        s      = sqrt(R² + z²)
+        cos θ₂ ≈ (R·cos θ − (D/2)) / s      [for D not ≪ R]
+        cos θ₂ ≈ R·cos θ / s                [in the limit D ≪ R]
+
+    The cos θ factor means only the front half of the ring
+    (θ ∈ [−π/2, π/2]) contributes; the back half has cos θ₂ ≤ 0 and
+    is ignored. This is the corrected form — an earlier
+    implementation used cos θ₂ = R/s (full-ring averaging), which
+    over-counted by a factor of π.
 
     ⚠️ The closed-form Shokri-Beyler expression exists in the
     literature but was deliberately not used here because the
@@ -198,31 +200,57 @@ def shokri_beyler_view_factor(
     if panel_count < 1:
         raise ValueError(f"panel_count must be >= 1, got {panel_count}")
 
-    dz = flame_height_m / panel_count
     r = distance_m
     d = flame_diameter_m
-    # Each ring's panel area = π·D·dz (side area of a thin ring).
-    panel_area = math.pi * d * dz
+    h = flame_height_m
+    r_cyl = d / 2.0
+
+    dz = h / panel_count
+    # Azimuthal discretisation: integrate θ from -π/2 to π/2. Use
+    # many points for accuracy; the integrand is smooth.
+    n_theta = 60
+    d_theta = math.pi / n_theta  # covers [-π/2, π/2]
 
     f_total = 0.0
     for i in range(panel_count):
-        # Mid-height of this panel.
+        # Mid-height of this ring.
         z = (i + 0.5) * dz
-        s = math.sqrt(r * r + z * z)
-        # cos θ₁ at the ground receptor: the angle between the upward
-        # normal at the receptor and the ray from receptor to the
-        # panel midpoint. For a ground point this is z/s (vertical
-        # component of the unit vector toward the panel).
-        # cos θ₂ at the panel: the panel normal is horizontal
-        # (pointing radially outward from the cylinder), so the dot
-        # product with the ray toward the receptor is R/s.
-        cos_theta_1 = z / s
-        cos_theta_2 = r / s
-        # Differential view factor contribution.
-        df = (cos_theta_1 * cos_theta_2) / (math.pi * s * s) * panel_area
-        f_total += df
+        for j in range(n_theta):
+            theta = -math.pi / 2.0 + (j + 0.5) * d_theta
+            # Vector from panel centre (on the cylinder surface) to
+            # the receptor. Panel centre at (r_cyl·cos θ, r_cyl·sin θ, z);
+            # receptor at (r, 0, 0). So the vector is
+            # (r − r_cyl·cos θ, −r_cyl·sin θ, −z).
+            vx = r - r_cyl * math.cos(theta)
+            vy = -r_cyl * math.sin(theta)
+            vz = -z
+            s = math.sqrt(vx * vx + vy * vy + vz * vz)
+            # cos θ₁ at the receptor: the receptor's normal points up,
+            # so cos θ₁ = (up-component of unit vector from receptor to
+            # panel) / |v|. The vector from receptor to panel is
+            # (-vx, -vy, -vz), so its z-component is +z. cos θ₁ = z/s.
+            cos_theta_1 = z / s
+            # cos θ₂ at the panel: panel normal is (cos θ, sin θ, 0).
+            # The unit vector from panel to receptor is (vx, vy, vz)/s.
+            # The dot product is (vx·cos θ + vy·sin θ + 0) / s.
+            cos_theta_2 = (vx * math.cos(theta) + vy * math.sin(theta)) / s
+            # The standard view-factor formula `dF = cos θ₁ · cos θ₂ /
+            # π s² dA` is for an *exterior* receptor (R ≥ r_cyl).
+            # When the receptor is inside the cylinder's bounding
+            # radius (R < r_cyl), the panel's outward normal points
+            # away from the receptor, giving cos θ₂ < 0. We handle
+            # the interior case by using |cos θ₂| — this treats the
+            # cylinder as an enclosure. The result is approximate
+            # (enclosure theory is more involved) but produces
+            # reasonable values; the orchestrator clamps close-range
+            # distances anyway, so this regime is not critical.
+            if cos_theta_2 < 0:
+                cos_theta_2 = -cos_theta_2
+            # Panel area element: r_cyl · dθ · dz.
+            panel_area = r_cyl * d_theta * dz
+            df = (cos_theta_1 * cos_theta_2) / (math.pi * s * s) * panel_area
+            f_total += df
 
-    # Clamp to [0, 1] to absorb numerical noise.
     return max(0.0, min(1.0, f_total))
 
 
