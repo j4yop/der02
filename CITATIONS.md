@@ -29,7 +29,7 @@ Source of fuel constants: heat of combustion, vapor density, flame temperature. 
   - Liquid densities at 15 °C: CRC Handbook, Younglove & Ely 1987 (propane), NIST TRC Web Thermo Tables (subscription database, linked from species pages). **Flagged: public WebBook species pages list ρ_crit only, not 15 °C ρ.**
 - **Ticket 03** — Thresholds: CCPS *Guidelines for CPQRA* 2nd ed., Table 2.x thermal radiation bands; CCPS overpressure damage criteria.
 - **Ticket 04** — Blast: TNO Green Book Ch. 6, Multi-Energy strength class 7. Worked example reference: TNO Green Book worked example X.
-- **Ticket 05** — Thermal: CCPS *Guidelines for CPQRA* 2nd ed., Ch. 2 (solid-flame model); API RP 521 (flame height).
-- **Ticket 06** — Wind: heuristic elongation/compression; reference CCPS Section Y.
+- **Ticket 05** — Thermal: point-source flux per CCPS *Guidelines for CPQRA* 2nd ed. Ch. 2; ALOHA user's manual. **Solid-flame view-factor model deferred** (needs flame-height sub-model from API RP 521).
+- **Ticket 06** — Wind: simplified CCPS dispersion correction (stretch factor); κ = 0.1 s/m default. **Real dispersion model deferred** (Britoil/EPA heavy-gas; Pasquill stability A–F).
 
 (Filled in detail as each ticket lands.)
