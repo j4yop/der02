@@ -23,16 +23,43 @@ Default scenario: 1000 m³ propane tank in Singapore with 5 m/s wind from the so
 
 ## Deployment
 
-See [DEPLOY.md](DEPLOY.md) for the recommended Streamlit Community Cloud
-setup (free, 5 min). Vercel is **not** supported — Streamlit's WebSocket
-state model doesn't fit Vercel's serverless function model.
+The repo ships with two UIs. Pick one:
+
+| UI | Tech | Deploy target |
+|---|---|---|
+| `app.py` | Streamlit | [Streamlit Community Cloud](https://share.streamlit.io) |
+| `api.py` + `public/index.html` | FastAPI + static HTML/JS | [Vercel](https://vercel.com) |
+
+See [DEPLOY.md](DEPLOY.md) for step-by-step instructions. The Vercel
+deploy takes ~5 minutes (one click "Deploy" + wait for build).
 
 ## Run the tests
 
 ```bash
-pytest -q          # 113 tests
-ruff check src tests app.py
+pytest -q          # 186 tests (includes 16 API tests)
+ruff check src tests app.py api.py examples/worked_example.py
 ```
+
+## API (FastAPI)
+
+The FastAPI backend (`api.py`) exposes the der02 package over HTTP
+for the Vercel-deployed static frontend. Run locally:
+
+```bash
+uvicorn api:app --reload --port 8000
+```
+
+Open <http://localhost:8000/docs> for the interactive API
+documentation. Key endpoints:
+
+- `GET /api/fuels` — list of 9 fuels with constants.
+- `GET /api/strength-classes` — TNO Multi-Energy classes 1–10.
+- `GET /api/severity-bands` — CCPS blast + thermal thresholds.
+- `POST /api/zones` — compute zone records for given inputs.
+- `POST /api/zones-multi` — multi-tank worst-of-per-point union.
+- `POST /api/zones-html` — return rendered Folium HTML.
+- `POST /api/zones-pdf` — return a text-only PDF summary.
+- `GET /api/health` — health check.
 
 ## Worked example
 

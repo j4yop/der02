@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "der02"
-version = "0.1.0"
+version = "0.2.0"
 description = "Threat-zone estimation for industrial fire and explosion response. TNO blast overpressure and solid-flame thermal radiation with wind distortion, drawn on a real map."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -19,6 +19,9 @@ dependencies = [
     "folium>=0.15",
     "streamlit>=1.32",
     "streamlit-folium>=0.18",
+    "fastapi>=0.110",
+    "pydantic>=2.0",
+    "uvicorn>=0.27",
 ]
 
 [project.optional-dependencies]

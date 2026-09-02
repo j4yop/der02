@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "echo 'no build needed — Vercel auto-detects FastAPI; static files in /public'",
+  "functions": {
+    "api.py": {
+      "maxDuration": 60,
+      "excludeFiles": "{tests/**,examples/**,.scratch/**,public/**,DEPLOY.md,DEMO.md,README.md,CITATIONS.md,SPEC.md,vercel.json,requirements.txt,.streamlit/**,.github/**}"
+    }
+  }
+}
