@@ -1,0 +1,15 @@
+# Don't bundle these into the function.
+# (Vercel still serves public/ from the CDN, but it's a separate code
+# path; excluding it from the function bundle keeps the function small.)
+tests/
+examples/
+.scratch/
+public/
+streamlit_app.py
+DEPLOY.md
+DEMO.md
+README.md
+CITATIONS.md
+SPEC.md
+.streamlit/
+.github/

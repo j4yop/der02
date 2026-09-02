@@ -1,11 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "echo 'Vercel auto-detects the FastAPI entrypoint via [tool.vercel] in pyproject.toml'",
-  "installCommand": "pip install --no-cache-dir fastapi pydantic uvicorn numpy shapely pyproj folium",
+  "installCommand": "pip install --no-cache-dir fastapi pydantic uvicorn numpy shapely pyproj folium .",
   "functions": {
     "api.py": {
       "maxDuration": 60,
-      "excludeFiles": "{tests/**,examples/**,.scratch/**,public/**,streamlit_app.py,DEPLOY.md,DEMO.md,README.md,CITATIONS.md,SPEC.md,vercel.json,requirements.txt,requirements-vercel.txt,.streamlit/**,.github/**}"
+      "excludeFiles": "{tests/**,examples/**,.scratch/**,public/**,streamlit_app.py,DEPLOY.md,DEMO.md,README.md,CITATIONS.md,SPEC.md,vercel.json,requirements.txt,.streamlit/**,.github/**}"
     }
   }
 }
