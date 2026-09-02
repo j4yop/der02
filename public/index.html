@@ -335,22 +335,52 @@
                 result.bbox.min_lon + (result.bbox.max_lon - result.bbox.min_lon) / 2],
                { title: result.source_label }).addTo(layerGroup)
         .bindPopup(`<b>${result.source_label}</b><br>Strength class ${result.strength_class}`);
-      // Group by severity and draw convex hull per band
+      // Group by severity and draw convex hull per band.
+      // Bands with fewer than 3 points (typical for the lethal band,
+      // which often only contains the source point) can't form a
+      // polygon. Render them as a circle at the centroid with a
+      // radius proportional to the farthest point.
       const bands = { lethal: [], danger: [], caution: [] };
       for (const r of result.records) {
         if (r.severity in bands) bands[r.severity].push([r.lat, r.lon]);
       }
       for (const [sev, pts] of Object.entries(bands)) {
-        if (pts.length < 3) continue;
-        const hull = convexHull(pts);
-        if (hull.length < 3) continue;
-        L.polygon(hull, {
-          color: SEVERITY_COLORS[sev],
-          fillColor: SEVERITY_COLORS[sev],
-          fillOpacity: SEVERITY_OPACITY,
-          weight: 2,
-        }).addTo(layerGroup)
-          .bindPopup(`<b>${sev.charAt(0).toUpperCase() + sev.slice(1)}</b> band (${pts.length} grid nodes)`);
+        if (pts.length === 0) continue;
+        const color = SEVERITY_COLORS[sev];
+        if (pts.length < 3) {
+          // Render as a circle marker at the centroid. Radius is
+          // the distance from the centroid to the farthest point
+          // (in degrees, then scaled to meters for display).
+          const cLat = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+          const cLon = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+          let maxRadiusM = 1;
+          for (const [pLat, pLon] of pts) {
+            const dLat = (pLat - cLat) * 111000;  // m per degree lat
+            const dLon = (pLon - cLon) * 111000 * Math.cos(cLat * Math.PI / 180);
+            const r = Math.sqrt(dLat * dLat + dLon * dLon);
+            if (r > maxRadiusM) maxRadiusM = r;
+          }
+          // Make sure the circle is visible even for a single point.
+          maxRadiusM = Math.max(maxRadiusM, 20);
+          L.circle([cLat, cLon], {
+            color: color,
+            fillColor: color,
+            fillOpacity: SEVERITY_OPACITY,
+            weight: 2,
+            radius: maxRadiusM,
+          }).addTo(layerGroup)
+            .bindPopup(`<b>${sev.charAt(0).toUpperCase() + sev.slice(1)}</b> band (${pts.length} grid node${pts.length === 1 ? "" : "s"})`);
+        } else {
+          const hull = convexHull(pts);
+          if (hull.length < 3) continue;
+          L.polygon(hull, {
+            color: color,
+            fillColor: color,
+            fillOpacity: SEVERITY_OPACITY,
+            weight: 2,
+          }).addTo(layerGroup)
+            .bindPopup(`<b>${sev.charAt(0).toUpperCase() + sev.slice(1)}</b> band (${pts.length} grid nodes)`);
+        }
       }
     }
 
