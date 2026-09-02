@@ -1,0 +1,17 @@
+[theme]
+base = "light"
+primaryColor = "#8B0000"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
+font = "sans serif"
+
+[server]
+# Streamlit Community Cloud handles port and headless mode; this is
+# the local development override.
+headless = true
+runOnSave = true
+fileWatcherType = "auto"
+
+[browser]
+gatherUsageStats = false

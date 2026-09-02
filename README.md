@@ -21,6 +21,12 @@ Open the URL Streamlit prints (usually `http://localhost:8501`).
 
 Default scenario: 1000 m³ propane tank in Singapore with 5 m/s wind from the south. Drag sliders to re-shape zones in real time.
 
+## Deployment
+
+See [DEPLOY.md](DEPLOY.md) for the recommended Streamlit Community Cloud
+setup (free, 5 min). Vercel is **not** supported — Streamlit's WebSocket
+state model doesn't fit Vercel's serverless function model.
+
 ## Run the tests
 
 ```bash

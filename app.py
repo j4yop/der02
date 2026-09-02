@@ -287,9 +287,9 @@ st.subheader("Export")
 export_col1, export_col2 = st.columns(2)
 
 # Render the folium map to HTML bytes for download.
-_html_buffer = io.StringIO()
+_html_buffer = io.BytesIO()
 fmap.save(_html_buffer, close_file=False)
-_html_str = _html_buffer.getvalue()
+_html_str = _html_buffer.getvalue().decode("utf-8")
 
 with export_col1:
     st.download_button(

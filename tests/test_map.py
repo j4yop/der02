@@ -110,3 +110,43 @@ class TestConvexHull:
         ]
         m = render_map(records, map_request)
         assert isinstance(m, folium.Map)
+
+
+class TestRenderToBuffer:
+    """Bug-regression: fmap.save() must accept BytesIO, not just file paths."""
+
+    def test_save_to_bytesio(self, synthetic_records, map_request):
+        import io
+        m = render_map(synthetic_records, map_request)
+        buf = io.BytesIO()
+        m.save(buf, close_file=False)
+        html_bytes = buf.getvalue()
+        assert isinstance(html_bytes, bytes)
+        assert len(html_bytes) > 1000
+        # Should be valid HTML
+        assert b"<html" in html_bytes.lower() or b"<!doctype" in html_bytes.lower()
+
+
+class TestPDFExport:
+    """PDF export via der02.export.html_to_pdf_bytes."""
+
+    def test_html_to_pdf_returns_valid_pdf(self):
+        from der02.export import html_to_pdf_bytes
+        pdf = html_to_pdf_bytes("<html><body>Hello</body></html>")
+        assert pdf.startswith(b"%PDF-")
+        assert b"%%EOF" in pdf
+
+    def test_html_to_pdf_with_long_html(self):
+        from der02.export import html_to_pdf_bytes
+        long_html = "<html>" + ("x" * 10000) + "</html>"
+        pdf = html_to_pdf_bytes(long_html)
+        assert pdf.startswith(b"%PDF-")
+        # Should be a few hundred bytes — content is truncated to 200 chars.
+        assert len(pdf) < 2000
+
+    def test_html_to_pdf_handles_special_chars(self):
+        from der02.export import html_to_pdf_bytes
+        html_with_parens = "Test (with) parens and \\backslash"
+        pdf = html_to_pdf_bytes(html_with_parens)
+        # Should not raise; should produce valid PDF.
+        assert pdf.startswith(b"%PDF-")

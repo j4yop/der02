@@ -1,0 +1,11 @@
+# Pinned for reproducible Streamlit Community Cloud deploys.
+# Streamlit Community Cloud reads this file directly.
+# Local dev installs `.[dev]` extras (pytest, ruff) on top.
+numpy>=1.26,<3
+scipy>=1.11
+shapely>=2.0,<3
+geopandas>=0.14,<2
+pyproj>=3.6
+folium>=0.15,<1
+streamlit>=1.32,<2
+streamlit-folium>=0.18,<1
