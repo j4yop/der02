@@ -5,12 +5,12 @@ The project ships with two UIs and three deploy targets.
 | UI | Tech | Best deploy target |
 |---|---|---|
 | `streamlit_app.py` | Streamlit | [Streamlit Community Cloud](https://share.streamlit.io) (free) |
-| `api.py` + `public/index.html` | FastAPI + static HTML/JS | [Vercel](https://vercel.com) (free) |
+| `app.py` + `public/index.html` | FastAPI + static HTML/JS | [Vercel](https://vercel.com) (free) |
 | Library only (`src/der02/`) | Python | PyPI (`pip install der02`) |
 
 ## Vercel (recommended for a public web demo)
 
-The FastAPI backend (`api.py`) + static frontend (`public/index.html`)
+The FastAPI backend (`app.py`) + static frontend (`public/index.html`)
 deploys to Vercel in one click. Vercel auto-detects the FastAPI
 `app` instance and serves the `public/` directory as static files.
 
@@ -39,7 +39,7 @@ triggers a redeploy.
 
 **What Vercel reads:**
 
-- `api.py` — FastAPI entrypoint. Vercel auto-detects the `app` instance
+- `app.py` — FastAPI entrypoint. Vercel auto-detects the `app` instance.
   via `[tool.vercel] entrypoint = "api:app"` in `pyproject.toml`.
 - `public/` — static files served at the matching URL paths.
 - `requirements.txt` — Python deps (FastAPI, pydantic, uvicorn, der02 deps).

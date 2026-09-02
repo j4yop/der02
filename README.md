@@ -28,7 +28,7 @@ The repo ships with two UIs. Pick one:
 | UI | Tech | Deploy target |
 |---|---|---|
 | `streamlit_app.py` | Streamlit | [Streamlit Community Cloud](https://share.streamlit.io) |
-| `api.py` + `public/index.html` | FastAPI + static HTML/JS | [Vercel](https://vercel.com) |
+| `app.py` + `public/index.html` | FastAPI + static HTML/JS | [Vercel](https://vercel.com) |
 
 See [DEPLOY.md](DEPLOY.md) for step-by-step instructions. The Vercel
 deploy takes ~5 minutes (one click "Deploy" + wait for build).
@@ -37,12 +37,12 @@ deploy takes ~5 minutes (one click "Deploy" + wait for build).
 
 ```bash
 pytest -q          # 186 tests (includes 16 API tests)
-ruff check src tests streamlit_app.py api.py examples/worked_example.py
+ruff check src tests streamlit_app.py app.py examples/worked_example.py
 ```
 
 ## API (FastAPI)
 
-The FastAPI backend (`api.py`) exposes the der02 package over HTTP
+The FastAPI backend (`app.py`) exposes the der02 package over HTTP
 for the Vercel-deployed static frontend. Run locally:
 
 ```bash

@@ -8,6 +8,15 @@ The static HTML frontend lives in `public/index.html` and is
 served by Vercel's CDN automatically (the FastAPI app does not
 serve it — Vercel handles the `public/` directory at the edge).
 
+Vercel deployment note
+----------------------
+Vercel's Python runtime does NOT install the local `der02` package
+(`src/der02/`) automatically — it only installs the third-party
+dependencies from `pyproject.toml` / `requirements.txt`. To make the
+`der02` package importable in the Vercel function, we add `src/` to
+`sys.path` at the top of this file. This avoids the need for a
+local-package install step.
+
 API:
     GET  /api/fuels            — list available fuels with constants.
     GET  /api/strength-classes — TNO Multi-Energy strength classes 1-10.
@@ -18,22 +27,31 @@ API:
     POST /api/zones-multi      — multi-tank worst-of-per-point union.
     GET  /api/health          — health check.
 
-The /api/zones-pdf endpoint uses the same minimal PDF writer as
-`der02.export.html_to_pdf_bytes`, so there are no headless-browser
-dependencies.
-
 Run locally:
-    uvicorn api:app --reload --port 8000
+    uvicorn app:app --reload --port 8000
 """
 
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, Field, field_validator
+# Make the `der02` package importable when running as a Vercel function.
+# In Vercel, only the entrypoint file (`app.py`) is on sys.path; the
+# `src/` directory (which contains the `der02` package) is not. We add
+# it explicitly so the import statements below work both locally and
+# on Vercel.
+import os
+import sys
 
-from der02 import __version__
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_SRC = os.path.join(_HERE, "src")
+if _SRC not in sys.path:
+    sys.path.insert(0, _SRC)
+
+from fastapi import FastAPI, HTTPException  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.responses import JSONResponse, Response  # noqa: E402
+from pydantic import BaseModel, Field, field_validator  # noqa: E402
+
+from der02 import __version__  # noqa: E402
 from der02.blast import CLASS_AMPLITUDE_FACTORS
 from der02.export import html_to_pdf_bytes
 from der02.fuels import FUELS, get_fuel

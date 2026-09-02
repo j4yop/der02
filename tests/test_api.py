@@ -1,4 +1,4 @@
-"""End-to-end tests for the FastAPI backend in api.py.
+"""End-to-end tests for the FastAPI backend in app.py.
 
 These tests use FastAPI's TestClient to exercise the full request
 stack without a running server.
@@ -6,14 +6,24 @@ stack without a running server.
 
 from __future__ import annotations
 
+import os
+import sys
+
 import pytest
+
+# Add src/ to sys.path so the test can import the `der02` package the
+# same way app.py does.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_SRC = os.path.join(os.path.dirname(_HERE), "src")
+if _SRC not in sys.path:
+    sys.path.insert(0, _SRC)
 
 
 @pytest.fixture
 def client():
     from fastapi.testclient import TestClient
 
-    from api import app
+    from app import app  # the FastAPI module (top-level at project root)
     return TestClient(app)
 
 
