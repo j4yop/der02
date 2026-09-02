@@ -14,7 +14,7 @@ Web-native consequence modeling. Given a tank of fuel, the wind, and the locatio
 git clone https://github.com/j4yop/der02
 cd der02
 pip install -e ".[dev]"
-streamlit run app.py
+streamlit run streamlit_app.py
 ```
 
 Open the URL Streamlit prints (usually `http://localhost:8501`).
@@ -27,7 +27,7 @@ The repo ships with two UIs. Pick one:
 
 | UI | Tech | Deploy target |
 |---|---|---|
-| `app.py` | Streamlit | [Streamlit Community Cloud](https://share.streamlit.io) |
+| `streamlit_app.py` | Streamlit | [Streamlit Community Cloud](https://share.streamlit.io) |
 | `api.py` + `public/index.html` | FastAPI + static HTML/JS | [Vercel](https://vercel.com) |
 
 See [DEPLOY.md](DEPLOY.md) for step-by-step instructions. The Vercel
@@ -37,7 +37,7 @@ deploy takes ~5 minutes (one click "Deploy" + wait for build).
 
 ```bash
 pytest -q          # 186 tests (includes 16 API tests)
-ruff check src tests app.py api.py examples/worked_example.py
+ruff check src tests streamlit_app.py api.py examples/worked_example.py
 ```
 
 ## API (FastAPI)
@@ -87,7 +87,7 @@ der02/
 ├── tests/                 # one test file per module
 │   └── manual_checklist.md   # what an evaluator can check by eye
 ├── .github/workflows/     # CI (pytest + ruff on push/PR) + PyPI publish on release
-├── app.py                 # Streamlit UI
+├── streamlit_app.py *# Streamlit UI
 ├── examples/
 │   └── worked_example.py  # end-to-end scenario (--pdf out.pdf for summary)
 ├── SPEC.md                # the spec this project is built against

@@ -1,8 +1,8 @@
 """FastAPI backend for der02 — Vercel-deployable.
 
 Exposes the der02 physics as a JSON API. The Streamlit app
-(`app.py`) remains the local-development UI; this FastAPI app
-serves the same package over HTTP for Vercel deployment.
+(`streamlit_app.py`) remains the local-development UI; this FastAPI
+app serves the same package over HTTP for Vercel deployment.
 
 The static HTML frontend lives in `public/index.html` and is
 served by Vercel's CDN automatically (the FastAPI app does not

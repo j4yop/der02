@@ -31,7 +31,7 @@ A Python package + Streamlit web app. The user drops a pin on a map, picks a fue
 ## Implementation Decisions
 
 - **Stack:** Python 3.12, numpy, scipy, shapely, geopandas, pyproj, folium, streamlit, streamlit-folium. pytest for tests. uv for dependency management. Prettier.
-- **Layout:** single repo. `src/der02/` package containing physics modules, fuel library, and zone computation. `app.py` at the root is the Streamlit entry point. `tests/` mirroring `src/der02/`.
+- **Layout:** single repo. `src/der02/` package containing physics modules, fuel library, and zone computation. `streamlit_app.py` at the root is the Streamlit entry point; `api.py` + `public/index.html` is the FastAPI + static frontend for Vercel. `tests/` mirroring `src/der02/`.
 - **Package modules:**
   - `src/der02/fuels.py` — fuel library (dataclass-per-fuel with constants sourced from NIST WebBook and CCPS).
   - `src/der02/blast.py` — TNO Multi-Energy blast overpressure model. Pure function `(distance, energy, ambient_pressure) -> overpressure_pa`.
@@ -50,7 +50,7 @@ A Python package + Streamlit web app. The user drops a pin on a map, picks a fue
 ## Testing Decisions
 
 - **What makes a good test:** a test asserts an externally observable property (a known pressure at a known distance, a known flux at a known range) using values from a cited reference. Tests do not assert internal variable names or implementation order. If the function were rewritten with the same model but different internals, the test should still pass.
-- **Modules tested:** every module in `src/der02/`. The Streamlit layer (`app.py`) is tested by manual demo only.
+- **Modules tested:** every module in `src/der02/`. The Streamlit layer (`streamlit_app.py`) is tested by manual demo only.
 - **Prior art:** for each physics function we cite at least one textbook example or worked problem (e.g. TNO Green Book worked example, CCPS sample calculation) and write a test that asserts our function reproduces the textbook answer to within 5%.
 - **TDD discipline:** for each module, write the failing test first, then implement the function, then refactor.
 

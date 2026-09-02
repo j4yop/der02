@@ -35,6 +35,12 @@ dev = [
 "Source code" = "https://github.com/j4yop/der02"
 "Issues" = "https://github.com/j4yop/der02/issues"
 
+[tool.vercel]
+# Vercel Python runtime looks for FastAPI `app` instance at
+# `app.py`/`main.py`/`server.py`/etc. by default. We use a custom
+# name `api.py` and point Vercel at it explicitly.
+entrypoint = "api:app"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

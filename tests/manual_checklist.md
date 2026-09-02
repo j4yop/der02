@@ -9,11 +9,11 @@ check fails, the project is not in a reviewable state.
 - [ ] **Repo at `~/Desktop/der02/` has a clean git history.** Run `git log --oneline`. Expect 5+ commits labelled `ticket 01` through `ticket 10`.
 - [ ] **`pip install -e ".[dev]"` succeeds** without errors.
 - [ ] **`pytest -q` reports ≥ 100 tests, all passing.**
-- [ ] **`ruff check src tests app.py` reports no issues.**
+- [ ] **`ruff check src tests streamlit_app.py` reports no issues.**
 
 ## 2. The Streamlit app starts
 
-- [ ] `streamlit run app.py` starts without traceback.
+- [ ] `streamlit run streamlit_app.py` starts without traceback.
 - [ ] The browser shows three colored polygons on a map.
 - [ ] The legend in the bottom-right of the map lists the three bands with distances.
 - [ ] The footer contains the disclaimer "Not for life-safety decisions."

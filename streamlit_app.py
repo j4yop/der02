@@ -1,7 +1,7 @@
 """Streamlit app: der02 threat-zone estimator.
 
 Run with:
-    streamlit run app.py
+    streamlit run streamlit_app.py
 
 The app is a thin UI layer over the der02 physics modules. It does
 NOT contain any physics — only orchestration, sliders, and rendering.

@@ -4,7 +4,7 @@ The project ships with two UIs and three deploy targets.
 
 | UI | Tech | Best deploy target |
 |---|---|---|
-| `app.py` | Streamlit | [Streamlit Community Cloud](https://share.streamlit.io) (free) |
+| `streamlit_app.py` | Streamlit | [Streamlit Community Cloud](https://share.streamlit.io) (free) |
 | `api.py` + `public/index.html` | FastAPI + static HTML/JS | [Vercel](https://vercel.com) (free) |
 | Library only (`src/der02/`) | Python | PyPI (`pip install der02`) |
 
@@ -39,7 +39,8 @@ triggers a redeploy.
 
 **What Vercel reads:**
 
-- `api.py` — FastAPI entrypoint. Vercel finds the `app` instance.
+- `api.py` — FastAPI entrypoint. Vercel auto-detects the `app` instance
+  via `[tool.vercel] entrypoint = "api:app"` in `pyproject.toml`.
 - `public/` — static files served at the matching URL paths.
 - `requirements.txt` — Python deps (FastAPI, pydantic, uvicorn, der02 deps).
 - `pyproject.toml` — alt dependency declaration (Vercel reads this too).
@@ -85,7 +86,7 @@ WORKDIR /app
 COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 8501
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
 ```
 
 Then deploy to Render.com, Fly.io, Railway, or any VPS.

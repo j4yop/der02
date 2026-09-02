@@ -4,7 +4,7 @@ Run the app:
 ```bash
 cd ~/Desktop/der02
 source .venv/bin/activate   # or: conda activate base (already has deps)
-streamlit run app.py
+streamlit run streamlit_app.py
 ```
 
 Open `http://localhost:8501`.
