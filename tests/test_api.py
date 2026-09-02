@@ -36,6 +36,28 @@ class TestHealth:
         assert "version" in body
 
 
+class TestFrontend:
+    """The static HTML frontend served by the FastAPI app at /."""
+
+    def test_root_returns_html_frontend(self, client):
+        r = client.get("/")
+        assert r.status_code == 200
+        body = r.text
+        # The frontend is a Leaflet-based HTML page; sanity-check
+        # for markers that survive a re-render.
+        assert "<html" in body.lower()
+        assert "leaflet" in body.lower()
+        assert "der02" in body
+
+    def test_root_returns_placeholder_if_index_missing(self, client, monkeypatch):
+        # Simulate the index.html being missing. The route should
+        # return a small placeholder rather than crash.
+        monkeypatch.setattr("app._INDEX_HTML", "/nonexistent/path/index.html")
+        r = client.get("/")
+        assert r.status_code == 200
+        assert "der02" in r.text
+
+
 class TestFuels:
     def test_fuels_list(self, client):
         r = client.get("/api/fuels")

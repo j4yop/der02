@@ -1,10 +1,12 @@
-# Don't bundle these into the function.
-# (Vercel still serves public/ from the CDN, but it's a separate code
-# path; excluding it from the function bundle keeps the function small.)
+# Don't bundle these into the function bundle.
+# (Vercel still serves public/ from the CDN separately. We exclude
+# them from the FUNCTION BUNDLE only to keep the function small. The
+# public/ directory is still deployed to the CDN by Vercel.)
+# IMPORTANT: do NOT exclude public/ here — that would prevent the
+# function from reading the file when serving the index route.
 tests/
 examples/
 .scratch/
-public/
 streamlit_app.py
 DEPLOY.md
 DEMO.md

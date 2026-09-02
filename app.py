@@ -48,7 +48,7 @@ if _SRC not in sys.path:
 
 from fastapi import FastAPI, HTTPException  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
-from fastapi.responses import JSONResponse, Response  # noqa: E402
+from fastapi.responses import HTMLResponse, JSONResponse, Response  # noqa: E402
 from pydantic import BaseModel, Field, field_validator  # noqa: E402
 
 from der02 import __version__  # noqa: E402
@@ -403,6 +403,27 @@ def zones_pdf(req: ZoneRequest) -> Response:
 @app.get("/api/health")
 def health() -> dict:
     return {"status": "ok", "version": __version__}
+
+
+# ── Frontend ─────────────────────────────────────────────────────────
+# Serve the static HTML frontend from `public/index.html`. This makes
+# the app work on Vercel regardless of whether Vercel's CDN static-file
+# serving picks up the `public/` directory, because the function itself
+# reads the file from its bundle.
+_INDEX_HTML = os.path.join(_HERE, "public", "index.html")
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def index() -> str:
+    """Serve the static HTML frontend."""
+    if not os.path.exists(_INDEX_HTML):
+        return (
+            "<html><body><h1>der02</h1>"
+            "<p>Frontend not found. Ensure <code>public/index.html</code> exists.</p>"
+            "</body></html>"
+        )
+    with open(_INDEX_HTML, encoding="utf-8") as f:
+        return f.read()
 
 
 __all__ = ["app"]
