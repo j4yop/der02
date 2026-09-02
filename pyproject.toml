@@ -10,15 +10,22 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "der02 contributors" }]
+# Slim dependency set: only what `src/der02/`, `api.py`, and
+# `streamlit_app.py` actually import. The previous list included
+# `geopandas`, `scipy`, `pandas`, `pyarrow`, `streamlit`, and
+# `streamlit-folium` defensively, but **nothing in the codebase
+# imports them**. Removing them drops the Vercel bundle from
+# 596 MB (over the 500 MB limit) to ~50-100 MB.
+#
+# For the Streamlit UI specifically, you may also need
+# `streamlit>=1.32` and `streamlit-folium>=0.18` at runtime — install
+# those separately with `pip install streamlit streamlit-folium`
+# or use `requirements.txt` which has the full set.
 dependencies = [
     "numpy>=1.26",
-    "scipy>=1.11",
     "shapely>=2.0",
-    "geopandas>=0.14",
     "pyproj>=3.6",
     "folium>=0.15",
-    "streamlit>=1.32",
-    "streamlit-folium>=0.18",
     "fastapi>=0.110",
     "pydantic>=2.0",
     "uvicorn>=0.27",
@@ -29,6 +36,10 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=4.1",
     "ruff>=0.3",
+]
+ui = [
+    "streamlit>=1.32",
+    "streamlit-folium>=0.18",
 ]
 
 [project.urls]

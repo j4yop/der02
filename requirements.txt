@@ -1,11 +1,8 @@
-# Pinned for reproducible Streamlit Community Cloud / Vercel deploys.
-# Streamlit Community Cloud reads this file directly.
-# Vercel reads pyproject.toml.
-# Local dev installs `.[dev]` extras (pytest, ruff) on top.
+# Full requirements for local development and Streamlit Community
+# Cloud. Vercel uses pyproject.toml directly (slim set).
+# Install: pip install -r requirements.txt
 numpy>=1.26,<3
-scipy>=1.11
 shapely>=2.0,<3
-geopandas>=0.14,<2
 pyproj>=3.6
 folium>=0.15,<1
 streamlit>=1.32,<2
@@ -13,3 +10,7 @@ streamlit-folium>=0.18,<1
 fastapi>=0.110,<1
 pydantic>=2.0,<3
 uvicorn>=0.27,<1
+
+# Optional UI extensions (uncomment if needed locally):
+# geopandas>=0.14,<2     # NOT USED — install only if you add GeoDataFrame support
+# scipy>=1.11             # NOT USED — install only if you add scipy-based analysis
